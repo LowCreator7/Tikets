@@ -10,11 +10,151 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
-<!-- QRCode -->
+<!-- QR Code -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
+<style>
+body {
+    margin: 0;
+    background: #eef3fb;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: #1a237e;
+}
+
+/* ---------- HEADER ---------- */
+.header {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    padding: 22px;
+    color: white;
+    font-size: 22px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header a {
+    color: #bbdefb;
+    text-decoration: none;
+    font-size: 15px;
+}
+
+/* ---------- CONTAINER ---------- */
+.container {
+    padding: 24px;
+    max-width: 900px;
+    margin: auto;
+}
+
+/* ---------- FILTROS ---------- */
+.filters {
+    margin-bottom: 20px;
+}
+
+.btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    color: white;
+    font-weight: 500;
+    margin-right: 8px;
+    transition: 0.2s;
+}
+
+.btn:hover {
+    opacity: 0.8;
+}
+
+.btn-all { background: #455a64; }
+.btn-pendente { background: #ef6c00; }
+.btn-pago { background: #2e7d32; }
+.btn-enviado { background: #1565c0; }
+
+/* ---------- CARD ---------- */
+.card {
+    background: white;
+    padding: 18px;
+    border-radius: 14px;
+    box-shadow: 0 3px 10px #0002;
+    margin-bottom: 20px;
+    transition: 0.25s;
+}
+
+.card:hover {
+    transform: scale(1.01);
+}
+
+/* ---------- STATUS BADGE ---------- */
+.badge {
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-right: 8px;
+    font-weight: 600;
+    color: white;
+}
+
+.bg-pendente { background: #ef6c00; }
+.bg-pago { background: #2e7d32; }
+.bg-enviado { background: #1565c0; }
+
+/* QR Code container */
+.qr-box {
+    width: 120px;
+    height: 120px;
+    padding: 10px;
+    background: #e3f2fd;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 12px;
+    margin-bottom: 12px;
+}
+
+/* Action buttons */
+.action-btn {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    margin-right: 6px;
+    cursor: pointer;
+    color: white;
+    font-weight: 500;
+}
+
+.action-pago { background: #2e7d32; }
+.action-enviado { background: #1565c0; }
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    Painel de Ingressos
+    <a href="index.html">⬅ Voltar</a>
+</div>
+
+<div class="container">
+
+    <!-- FILTROS -->
+    <div class="filters">
+        <button class="btn btn-all" onclick="setFiltro('todos')">Todos</button>
+        <button class="btn btn-pendente" onclick="setFiltro('pendente')">Pendentes</button>
+        <button class="btn btn-pago" onclick="setFiltro('pago')">Pagos</button>
+        <button class="btn btn-enviado" onclick="setFiltro('enviado')">Enviados</button>
+    </div>
+
+    <div id="lista"></div>
+
+</div>
+
 <script>
-// =============== CONFIG FIREBASE ===============
+// ================= FIREBASE ==================
 const firebaseConfig = {
     apiKey: "AIzaSyD4Mwgq2qmjZ33VVR7RUFjZViUXJ3Ijpgk",
     authDomain: "sistemaingressos-a98f0.firebaseapp.com",
@@ -29,67 +169,21 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// Proteção
+// Proteção da página
 auth.onAuthStateChanged(user => {
-  if (!user) window.location.href = "login.html";
+    if (!user) window.location.href = "login.html";
 });
-</script>
 
-<style>
-body {
-    font-family: Arial, sans-serif;
-    background: #f4f7fb;
-    padding: 20px;
-    color: #0d47a1;
-}
-
-.card {
-    background: white;
-    padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 16px;
-    box-shadow: 0 2px 5px #0002;
-}
-
-.btn {
-    padding: 8px;
-    border: none;
-    border-radius: 6px;
-    color: white;
-    cursor: pointer;
-    margin-right: 6px;
-}
-
-.pago { background: #2e7d32; }
-.enviado { background: #1565c0; }
-.pendente { background: #e65100; }
-</style>
-
-</head>
-<body>
-
-<h2>Painel de Ingressos</h2>
-<a href="index.html">⬅ Voltar</a>
-
-<h3>Filtros</h3>
-<button class="btn pendente" onclick="setFiltro('todos')">Todos</button>
-<button class="btn pendente" onclick="setFiltro('pendente')">Pendentes</button>
-<button class="btn pago" onclick="setFiltro('pago')">Pagos</button>
-<button class="btn enviado" onclick="setFiltro('enviado')">Enviados</button>
-
-<div id="lista" style="margin-top:20px;"></div>
-
-<script>
+// ================== LÓGICA DO PAINEL ==================
 let filtroAtual = "todos";
+let ingressos = [];
 
 function setFiltro(f){
     filtroAtual = f;
     render();
 }
 
-// =============== CARREGAR EM TEMPO REAL ===============
-let ingressos = [];
-
+// Carrega em tempo real
 db.collection("ingressos")
   .orderBy("geradoEm", "desc")
   .onSnapshot(snapshot => {
@@ -98,7 +192,7 @@ db.collection("ingressos")
         render();
   });
 
-// =============== ATUALIZA STATUS ===============
+// Atualizar status
 function marcarPago(id){
     db.collection("ingressos").doc(id).update({
         statusPagamento: "pago"
@@ -111,7 +205,7 @@ function marcarEnviado(id){
     });
 }
 
-// =============== RENDERIZAÇÃO ===============
+// Renderização
 function render(){
     const lista = document.getElementById("lista");
     lista.innerHTML = "";
@@ -124,40 +218,42 @@ function render(){
         );
     }
 
-    if (filtrados.length === 0){
-        lista.innerHTML = "<p>Nenhum ingresso encontrado.</p>";
-        return;
-    }
-
     filtrados.forEach(item => {
         const card = document.createElement("div");
         card.className = "card";
 
         card.innerHTML = `
-            <b>ID: </b> ${item.id}<br>
-            <b>Evento:</b> ${item.evento}<br>
-            <b>Pagamento:</b> ${item.statusPagamento}<br>
-            <b>Envio:</b> ${item.statusEnvio}<br><br>
-            <div id="qr-${item.id}"></div>
-            <br>
+            <div style="font-size:18px;font-weight:bold;color:#1e3c72">🎟 ${item.id}</div>
+            <div><b>Evento:</b> ${item.evento}</div>
 
-            <button class="btn pago" onclick="marcarPago('${item.id}')">Marcar como Pago</button>
-            <button class="btn enviado" onclick="marcarEnviado('${item.id}')">Marcar como Enviado</button>
+            <div style="margin-top:10px;">
+                <span class="badge bg-${item.statusPagamento}">Pagamento: ${item.statusPagamento}</span>
+                <span class="badge bg-${item.statusEnvio}">Envio: ${item.statusEnvio}</span>
+            </div>
+
+            <div class="qr-box" id="qr-${item.id}"></div>
+
+            <button class="action-btn action-pago" onclick="marcarPago('${item.id}')">
+                ✔ Marcar como Pago
+            </button>
+
+            <button class="action-btn action-enviado" onclick="marcarEnviado('${item.id}')">
+                ✉ Marcar como Enviado
+            </button>
         `;
 
         lista.appendChild(card);
 
-        // gera QR
+        // Gera QR Code
         new QRCode(document.getElementById("qr-"+item.id), {
             text: item.id,
-            width: 110,
-            height: 110
+            width: 100,
+            height: 100
         });
     });
-
 }
+
 </script>
 
 </body>
 </html>
-
