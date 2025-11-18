@@ -173,6 +173,7 @@
 
     <div class="controls" aria-hidden="false">
       <button id="stopBtn" class="btn btn-ghost" style="display:none;">Parar câmera</button>
+       <button id="restartBtn" class="btn btn-primary" style="display:none;">Validar outro ingresso</button>
      
     </div>
     <div class="small" style="margin-top:8px; text-align:center;">Conectado ao sistema — GitHub Pages & Firebase</div>
@@ -208,7 +209,7 @@
 
 </div>
 
-   <button id="restartBtn" class="btn btn-primary" style="display:none;">Validar outro ingresso</button>
+  
 
 <script>
 /* ---------------- FIREBASE CONFIG ---------------- */
@@ -302,46 +303,73 @@ async function pickCamera() {
   } catch(e){ console.warn('pickCamera err', e); return null; }
 }
 
-/* Start scanning */
 async function startScanner() {
   if (scanning) return;
+
   currentCameraId = await pickCamera();
-  if(!currentCameraId){
-    renderResultCard('error','Nenhuma câmera','Nenhuma câmera encontrada no dispositivo. Verifique permissões.');
+  if (!currentCameraId) {
+    renderResultCard(
+      "error",
+      "Nenhuma câmera",
+      "Nenhuma câmera encontrada no dispositivo. Verifique permissões."
+    );
     return;
   }
 
-  html5QrCode = new Html5Qrcode('reader', { experimentalFeatures: {useBarCodeDetectorIfSupported: false} });
+  // criar NOVO scanner SEMPRE
+  html5QrCode = new Html5Qrcode("reader");
 
   try {
     await html5QrCode.start(
       currentCameraId,
-      { fps: 10, qrbox: Math.min(300, Math.floor((readerEl.clientWidth) * 0.8)) },
+      {
+        fps: 10,
+        qrbox: Math.min(300, Math.floor(readerEl.clientWidth * 0.8)),
+        disableFlip: true
+      },
       onScanSuccessInternal,
-      (err)=>{}
+      () => {}
     );
+
     scanning = true;
-    stopBtn.style.display = 'inline-block';
-    restartBtn.style.display = 'none';
+    stopBtn.style.display = "inline-block";
+    restartBtn.style.display = "none";
     showInitial();
-  } catch(err){
-    console.error('startScanner error',err);
-    renderResultCard('error','Erro ao acessar câmera','Não foi possível iniciar a câmera. Verifique permissões e recarregue a página.');
+  } catch (err) {
+    console.error("startScanner error", err);
+    renderResultCard(
+      "error",
+      "Erro ao acessar câmera",
+      "Não foi possível iniciar a câmera. Verifique permissões e recarregue."
+    );
   }
 }
 
-/* Stop scanning */
+
 async function stopScanner() {
-  if(!html5QrCode) return;
-  try{
-    await html5QrCode.stop();
-  }catch(e){ /* ignore */ }
-  try{ html5QrCode.clear(); }catch(e){}
-  html5QrCode = null;
+  if (!html5QrCode) return;
+
+  try {
+    await html5QrCode.stop(); // Para a câmera
+  } catch (e) {
+    console.warn("Erro ao parar scanner:", e);
+  }
+
+  // NÃO usar clear() no iPhone — trava o restart
+  try {
+    if (html5QrCode._isScanning) {
+      // força destruição interna se necessário
+      html5QrCode._isScanning = false;
+    }
+  } catch (e) {}
+
+  html5QrCode = null; // permite recriar do zero
   scanning = false;
-  stopBtn.style.display = 'none';
-  restartBtn.style.display = 'inline-block';
+
+  stopBtn.style.display = "none";
+  restartBtn.style.display = "inline-block";
 }
+
 
 /* Called when a QR is decoded */
 async function onScanSuccessInternal(decodedText, decodedResult) {
@@ -417,10 +445,12 @@ stopBtn.addEventListener('click', async ()=>{
   await stopScanner();
 });
 
-restartBtn.addEventListener('click', async ()=>{
+restartBtn.addEventListener("click", async () => {
   showInitial();
-  await startScanner();
+  await stopScanner(); // garante limpeza total
+  await startScanner(); // cria novo scanner do zero
 });
+
 
 /* start */
 attachCountersRealtime();
@@ -443,5 +473,6 @@ window.addEventListener('resize', ()=>{
 
 </body>
 </html>
+
 
 
