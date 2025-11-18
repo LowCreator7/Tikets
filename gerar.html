@@ -163,14 +163,14 @@ document.getElementById("btnGerar").addEventListener("click", async () => {
             link.click();
 
             // ----------- Salvar no Firestore NO NOVO PADRÃO -------------
-            await db.collection("ingressos").add({
-                id: ingressoId,
-                evento: "Samba de Férias",
-                geradoEm: dataGerada,
-                statusEnvio: "pendente",
-                statusPagamento: "pendente",
-                template: template
-            });
+           await db.collection("ingressos").doc(ingressoId).set({
+    id: ingressoId,
+    evento: "Samba de Férias",
+    geradoEm: dataGerada,
+    statusEnvio: "pendente",
+    statusPagamento: "pendente",
+    template: template
+});
 
         }
 
@@ -189,3 +189,4 @@ document.getElementById("btnGerar").addEventListener("click", async () => {
 
 </body>
 </html>
+
