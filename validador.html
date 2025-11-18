@@ -74,7 +74,7 @@
 
       // Tenta câmera traseira — se falhar, tenta qualquer câmera
       Html5Qrcode.getCameras().then(devices => {
-        if (devices.length === 0) {
+        if (devices.length === 1) {
           alert("Nenhuma câmera encontrada.");
           return;
         }
@@ -100,3 +100,4 @@
   </script>
 </body>
 </html>
+
