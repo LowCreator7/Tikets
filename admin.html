@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel Administrador - Sistema de Ingressos</title>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="firebase.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+    }
+
+    header {
+      background: #111827;
+      padding: 15px;
+      color: white;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    #container {
+      max-width: 900px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    }
+
+    h2 {
+      margin: 0 0 15px 0;
+      font-size: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+    }
+
+    th {
+      background: #111827;
+      color: white;
+    }
+
+    .badge {
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      color: white;
+    }
+
+    .pago { background: #10b981; }
+    .pendente { background: #ef4444; }
+
+    .enviado { background: #2563eb; }
+    .nao-enviado { background: #6b7280; }
+
+    button {
+      padding: 8px 12px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      font-size: 13px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1e40af;
+    }
+  </style>
+</head>
+
+<body>
+  <header>Painel Administrador</header>
+
+  <div id="container">
+    <h2>Todos os ingressos</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Evento</th>
+          <th>Vendedor</th>
+          <th>Pagamento</th>
+          <th>Envio</th>
+          <th>Ações</th>
+          <th>Data</th>
+        </tr>
+      </thead>
+      <tbody id="lista"></tbody>
+    </table>
+
+  </div>
+
+  <script>
+    firebase.auth().onAuthStateChanged(async user => {
+      if (!user) {
+        alert("Você precisa estar logado como administrador.");
+        window.location.href = "index.html";
+        return;
+      }
+
+      carregarIngressos();
+    });
+
+    // ---- CARREGAR TODOS OS INGRESSOS ---- //
+    function carregarIngressos() {
+      firebase.firestore()
+        .collection("ingressos")
+        .orderBy("geradoEm", "desc")
+        .onSnapshot(snapshot => {
+
+          const lista = document.getElementById("lista");
+          lista.innerHTML = "";
+
+          snapshot.forEach(doc => {
+            const ing = doc.data();
+
+            const pagamento = ing.statusPagamento === "pago" ? 
+              `<span class="badge pago">PAGO</span>` :
+              `<span class="badge pendente">PENDENTE</span>`;
+
+            const envio = ing.statusEnvio === "enviado" ? 
+              `<span class="badge enviado">ENVIADO</span>` :
+              `<span class="badge nao-enviado">PENDENTE</span>`;
+
+            const data = ing.geradoEm?.toDate().toLocaleString("pt-BR");
+
+            lista.innerHTML += `
+              <tr>
+                <td>${ing.id}</td>
+                <td>${ing.evento}</td>
+                <td>${ing.vendedorEmail || "—"}</td>
+                <td>${pagamento}</td>
+                <td>${envio}</td>
+
+                <td>
+                  <button onclick="marcarPago('${doc.id}')">Pago</button>
+                  <button onclick="marcarEnviado('${doc.id}')">Enviado</button>
+                </td>
+
+                <td>${data}</td>
+              </tr>
+            `;
+          });
+        });
+    }
+
+    // ---- ATUALIZAR STATUS ---- //
+
+    function marcarPago(id) {
+      firebase.firestore().collection("ingressos").doc(id)
+        .update({ statusPagamento: "pago" })
+        .then(() => console.log("Pagamento marcado"))
+        .catch(err => alert(err.message));
+    }
+
+    function marcarEnviado(id) {
+      firebase.firestore().collection("ingressos").doc(id)
+        .update({ statusEnvio: "enviado" })
+        .then(() => console.log("Envio marcado"))
+        .catch(err => alert(err.message));
+    }
+
+  </script>
+
+</body>
+</html>
