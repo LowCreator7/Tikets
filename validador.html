@@ -173,8 +173,7 @@
 
     <div class="controls" aria-hidden="false">
       <button id="stopBtn" class="btn btn-ghost" style="display:none;">Parar câmera</button>
-       <button id="restartbtn" class="btn btn-primary" style="display:none;">Validar outro ingresso</button>
-     
+      <button id="restartBtn" class="btn btn-primary" style="display:none;">Validar outro ingresso</button>
     </div>
     <div class="small" style="margin-top:8px; text-align:center;">Conectado ao sistema — GitHub Pages & Firebase</div>
   </div>
@@ -208,8 +207,6 @@
   </div>
 
 </div>
-
-  
 
 <script>
 /* ---------------- FIREBASE CONFIG ---------------- */
@@ -303,48 +300,33 @@ async function pickCamera() {
   } catch(e){ console.warn('pickCamera err', e); return null; }
 }
 
+/* Start scanning */
 async function startScanner() {
   if (scanning) return;
-
   currentCameraId = await pickCamera();
-  if (!currentCameraId) {
-    renderResultCard(
-      "error",
-      "Nenhuma câmera",
-      "Nenhuma câmera encontrada no dispositivo. Verifique permissões."
-    );
+  if(!currentCameraId){
+    renderResultCard('error','Nenhuma câmera','Nenhuma câmera encontrada no dispositivo. Verifique permissões.');
     return;
   }
 
-  // criar NOVO scanner SEMPRE
-  html5QrCode = new Html5Qrcode("reader");
+  html5QrCode = new Html5Qrcode('reader', { experimentalFeatures: {useBarCodeDetectorIfSupported: false} });
 
   try {
     await html5QrCode.start(
       currentCameraId,
-      {
-        fps: 10,
-        qrbox: Math.min(300, Math.floor(readerEl.clientWidth * 0.8)),
-        disableFlip: true
-      },
+      { fps: 10, qrbox: Math.min(300, Math.floor((readerEl.clientWidth) * 0.8)) },
       onScanSuccessInternal,
-      () => {}
+      (err)=>{}
     );
-
     scanning = true;
-    stopBtn.style.display = "inline-block";
-    restartBtn.style.display = "none";
+    stopBtn.style.display = 'inline-block';
+    restartBtn.style.display = 'none';
     showInitial();
-  } catch (err) {
-    console.error("startScanner error", err);
-    renderResultCard(
-      "error",
-      "Erro ao acessar câmera",
-      "Não foi possível iniciar a câmera. Verifique permissões e recarregue."
-    );
+  } catch(err){
+    console.error('startScanner error',err);
+    renderResultCard('error','Erro ao acessar câmera','Não foi possível iniciar a câmera. Verifique permissões e recarregue a página.');
   }
 }
-
 
 async function stopScanner() {
   if (!html5QrCode) return;
@@ -369,7 +351,6 @@ async function stopScanner() {
   stopBtn.style.display = "none";
   restartBtn.style.display = "inline-block";
 }
-
 
 /* Called when a QR is decoded */
 async function onScanSuccessInternal(decodedText, decodedResult) {
@@ -450,31 +431,13 @@ restartBtn.addEventListener("click", async () => {
   await stopScanner(); // garante limpeza total
   await startScanner(); // cria novo scanner do zero
 });
-
-
+  
 /* start */
 attachCountersRealtime();
 startScanner();
 
-/* Resize handler: adjust qrbox on resize */
-let resizeTimeout = null;
-window.addEventListener('resize', ()=>{
-  if(!scanning || !html5QrCode) return;
-  clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(async ()=>{
-    // restart with new qrbox size
-    try {
-      await stopScanner();
-      await startScanner();
-    } catch(e){ console.warn('resize restart failed', e); }
-  }, 300);
-});
+window.addEventListener("resize", () => {});
 </script>
 
 </body>
 </html>
-
-
-
-
-
