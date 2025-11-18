@@ -169,30 +169,31 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// Proteção da página
-auth.onAuthStateChanged(user => {
-    if (!user) window.location.href = "login.html";
-});
-
-// ================== LÓGICA DO PAINEL ==================
 let filtroAtual = "todos";
 let ingressos = [];
 
+// ================= PROTEÇÃO + CARREGAMENTO ==================
+auth.onAuthStateChanged(user => {
+    if (!user) return window.location.href = "login.html";
+
+    // 🔥 AGORA SOMENTE OS INGRESSOS DO VENDEDOR LOGADO
+    db.collection("ingressos")
+      .where("vendedorUid", "==", user.uid)
+      .orderBy("geradoEm", "desc")
+      .onSnapshot(snapshot => {
+            ingressos = [];
+            snapshot.forEach(doc => ingressos.push(doc.data()));
+            render();
+      });
+});
+
+// ================= FILTROS ==================
 function setFiltro(f){
     filtroAtual = f;
     render();
 }
 
-// Carrega em tempo real
-db.collection("ingressos")
-  .orderBy("geradoEm", "desc")
-  .onSnapshot(snapshot => {
-        ingressos = [];
-        snapshot.forEach(doc => ingressos.push(doc.data()));
-        render();
-  });
-
-// Atualizar status
+// ================= ATUALIZAR STATUS ==================
 function marcarPago(id){
     db.collection("ingressos").doc(id).update({
         statusPagamento: "pago"
@@ -205,7 +206,7 @@ function marcarEnviado(id){
     });
 }
 
-// Renderização
+// ================= RENDER ==================
 function render(){
     const lista = document.getElementById("lista");
     lista.innerHTML = "";
@@ -214,7 +215,8 @@ function render(){
 
     if (filtroAtual !== "todos"){
         filtrados = ingressos.filter(i => 
-            i.statusPagamento === filtroAtual || i.statusEnvio === filtroAtual
+            i.statusPagamento === filtroAtual || 
+            i.statusEnvio === filtroAtual
         );
     }
 
@@ -244,7 +246,6 @@ function render(){
 
         lista.appendChild(card);
 
-        // Gera QR Code
         new QRCode(document.getElementById("qr-"+item.id), {
             text: item.id,
             width: 100,
@@ -252,8 +253,8 @@ function render(){
         });
     });
 }
-
 </script>
 
 </body>
 </html>
+
