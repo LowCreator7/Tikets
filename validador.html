@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Validar Ingresso</title>
 
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
   <!-- Biblioteca do QRCode -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
@@ -20,14 +25,14 @@
     #reader {
       width: 100%;
       max-width: 350px;
-      height: 350px; /* Importante para iPhone */
+      height: 350px;
       margin: auto;
       background: #000;
     }
 
     #resultado {
       margin-top: 20px;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: bold;
     }
 
@@ -53,18 +58,68 @@
   <button onclick="window.location.href='index.html'">Voltar</button>
 
   <script>
-    // Função chamada quando o QR Code é lido
-    function onScanSuccess(decodedText) {
-      document.getElementById("resultado").innerHTML =
-        "🎫 Ingresso encontrado:<br>" + decodedText;
+    /* --------------------🔥 CONFIG FIREBASE -------------------- */
+    const firebaseConfig = {
+      apiKey: "AIzaSyD4Mwgq2qmjZ33VVR7RUFjZViUXJ3Ijpgk",
+      authDomain: "sistemaingressos-a98f0.firebaseapp.com",
+      projectId: "sistemaingressos-a98f0",
+      storageBucket: "sistemaingressos-a98f0.appspot.com",
+      messagingSenderId: "1227812590",
+      appId: "1:1227812590:web:07107c0e3069fe9dfbcdff"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    /* ----------------------------------------------------------- */
+
+
+    /* ------------ FUNÇÃO APÓS LER O QR CODE -------------------- */
+    async function onScanSuccess(idLido) {
+      const resultado = document.getElementById("resultado");
+
+      try {
+        const ref = db.collection("ingressos").doc(idLido.trim());
+        const doc = await ref.get();
+
+        if (!doc.exists) {
+          resultado.style.color = "red";
+          resultado.innerHTML = "❌ Ingresso inválido";
+          return;
+        }
+
+        const data = doc.data();
+
+        if (data.status === "usado") {
+          resultado.style.color = "orange";
+          resultado.innerHTML =
+            "⚠️ Ingresso já utilizado<br><small>" +
+            (data.usadoEm?.toDate ? data.usadoEm.toDate().toLocaleString() : "") +
+            "</small>";
+          return;
+        }
+
+        // Marca como usado
+        await ref.update({
+          status: "usado",
+          usadoEm: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        resultado.style.color = "green";
+        resultado.innerHTML = "✔️ Ingresso validado com sucesso!";
+
+      } catch (e) {
+        resultado.style.color = "red";
+        resultado.innerHTML = "Erro: " + e.message;
+      }
     }
 
-    // Caso o QR não seja lido
     function onScanError(error) {
-      console.warn(error);
+      console.warn("Erro scan:", error);
     }
 
-    // Inicia o scanner com prioridade para a câmera traseira
+
+    /* ----------- FUNÇÃO PARA IDENTIFICAR CÂMERA ---------------- */
     async function iniciarScanner() {
       const resultado = document.getElementById("resultado");
 
@@ -77,20 +132,17 @@
           return;
         }
 
-        // Identifica a câmera traseira
+        // Prioriza câmera traseira
         let cameraId = devices.find(d =>
           d.label.toLowerCase().includes("back") ||
           d.label.toLowerCase().includes("rear") ||
           d.label.toLowerCase().includes("traseira")
         )?.id;
 
-        // Se não encontrar, usa a primeira
         if (!cameraId) cameraId = devices[0].id;
 
-        // Cria o scanner
         const scanner = new Html5Qrcode("reader");
 
-        // Inicia
         await scanner.start(
           cameraId,
           { fps: 10, qrbox: 250 },
@@ -99,14 +151,13 @@
         );
 
       } catch (err) {
-        console.error("Erro ao iniciar câmera:", err);
+        console.error(err);
         resultado.textContent =
           "⚠️ Não foi possível acessar a câmera. Verifique permissões.";
         resultado.style.color = "red";
       }
     }
 
-    // Start
     iniciarScanner();
   </script>
 
