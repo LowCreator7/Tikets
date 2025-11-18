@@ -1,21 +1,67 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Sistema - Samba de Férias</title>
-<link rel="icon" href="">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Samba de Férias - Sistema de Ingressos</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #0d47a1;
+        color: white;
+        text-align: center;
+        padding: 40px 20px;
+    }
+
+    h1 {
+        font-size: 2.2rem;
+        margin-bottom: 10px;
+    }
+
+    p { opacity: 0.9; }
+
+    .btn {
+        display: block;
+        width: 250px;
+        margin: 20px auto;
+        padding: 15px;
+        background: white;
+        color: #0d47a1;
+        font-weight: bold;
+        text-decoration: none;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        transition: 0.2s;
+    }
+
+    .btn:hover {
+        transform: scale(1.05);
+    }
+
+    .box {
+        background: rgba(255,255,255,0.12);
+        padding: 20px;
+        border-radius: 12px;
+        margin-top: 30px;
+        max-width: 380px;
+        margin-left: auto;
+        margin-right: auto;
+        backdrop-filter: blur(4px);
+    }
+</style>
 </head>
-<body style="font-family:Arial,Helvetica,sans-serif; background:#f4f7fb; color:#0d47a1; text-align:center; padding:40px;">
-  <h1>Samba de Férias — Sistema</h1>
-  <p>Use os botões abaixo:</p>
-  <div style="max-width:360px;margin:20px auto;display:flex;flex-direction:column;gap:12px;">
-    <a href="gerar.html" style="padding:12px;background:#1565c0;color:#fff;border-radius:8px;text-decoration:none;">Gerar Ingressos</a>
-    <a href="login.html" style="padding:12px;background:#1565c0;color:#fff;border-radius:8px;text-decoration:none;">Área Administrativa (Login)</a>
-    <a href="validador.html" style="padding:12px;background:#1565c0;color:#fff;border-radius:8px;text-decoration:none;">Validador (Portaria)</a>
-    <a href="controle.html" style="padding:12px;background:#1565c0;color:#fff;border-radius:8px;text-decoration:none;">Painel de Controle (Requer login)</a>
-  </div>
-  <small>QR Codes geram apenas o ID do ingresso (ex.: SAMBADF-...)</small>
+<body>
+
+<h1>Samba de Férias</h1>
+<p>Sistema simples para controle e validação de ingressos digitais.</p>
+
+<div class="box">
+    <a class="btn" href="gerar.html">Gerar Ingressos</a>
+    <a class="btn" href="login.html">Área Administrativa (Login)</a>
+    <a class="btn" href="controle.html">Listar Ingressos</a>
+    <a class="btn" href="validador.html">Validar Ingressos</a>
+</div>
+
 </body>
 </html>
