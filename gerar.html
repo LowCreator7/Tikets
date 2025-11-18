@@ -1,3 +1,4 @@
+<!-- gerar.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -5,128 +6,168 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Gerar Ingressos</title>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-<script src="firebase.js"></script>
 
+<!-- QRCode + html2canvas -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
+<script>
+// =============================
+// CONFIGURAÇÃO FIREBASE
+// =============================
+const firebaseConfig = {
+    apiKey: "AIzaSyD4Mwgq2qmjZ33VVR7RUFjZViUXJ3Ijpgk",
+    authDomain: "sistemaingressos-a98f0.firebaseapp.com",
+    projectId: "sistemaingressos-a98f0",
+    storageBucket: "sistemaingressos-a98f0.firebasestorage.app",
+    messagingSenderId: "1227812590",
+    appId: "1:1227812590:web:07107c0e3069fe9dfbcdff",
+    measurementId: "G-QGDNMN0VQ5"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+// protege a página
+auth.onAuthStateChanged(user => {
+    if (!user) window.location.href = "login.html";
+});
+</script>
+
 </head>
-<body style="font-family:Arial,sans-serif; padding:24px; background:#f4f7fb; color:#0d47a1;">
+<body style="font-family:Arial,Helvetica,sans-serif; padding:24px; background:#f4f7fb; color:#0d47a1;">
 
 <h2>Gerar Ingressos – Samba de Férias</h2>
-<a href="controle.html" style="color:#1565c0;display:inline-block;margin-bottom:15px;">⬅ Voltar</a>
+<a href="index.html" style="color:#1565c0;display:inline-block;margin-bottom:15px;">⬅ Voltar</a>
 
 <div style="max-width:720px;margin:18px auto;background:white;padding:16px;border-radius:8px;">
-  <label>Imagem do Ingresso (template)</label><br/>
-  <input type="file" id="templateImg" accept="image/*"><br/>
 
-  <label style="margin-top:12px;">Quantidade de ingressos</label><br/>
-  <input type="number" id="qtd" value="1" min="1" style="padding:8px;width:80px"><br/>
+    <label>Imagem do Ingresso (template)</label><br>
+    <input type="file" id="templateImg" accept="image/*"><br>
 
-  <label style="margin-top:12px;">Nome do Cliente</label><br/>
-  <input type="text" id="clienteNome" placeholder="Ex: João Silva" style="padding:8px;width:100%"><br/>
+    <label style="margin-top:12px;">Quantidade de ingressos</label><br>
+    <input type="number" id="qtd" value="1" min="1" style="padding:8px;width:80px"><br>
 
-  <label style="margin-top:12px;">Email do Cliente</label><br/>
-  <input type="email" id="clienteEmail" placeholder="Ex: joao@email.com" style="padding:8px;width:100%"><br/>
+    <button id="btnGen" 
+        style="margin-top:12px;padding:10px;background:#1565c0;color:white;border:none;border-radius:6px;">
+        Gerar Ingressos
+    </button>
 
-  <button id="btnGen" style="margin-top:12px;padding:10px;background:#1565c0;color:white;border:none;border-radius:6px;">Gerar Ingressos</button>
+    <div id="resultado" style="margin-top:16px"></div>
 
-  <div id="resultado" style="margin-top:16px"></div>
 </div>
 
 <script>
-auth.onAuthStateChanged(user => {
-  if (!user) window.location.href = "login.html";
-});
-
-function gerarID(){ 
-  return 'SAMBADF-' + Math.random().toString(36).substring(2,10).toUpperCase(); 
+// =============================
+// AUXILIAR
+// =============================
+function gerarID(){
+    return 'SAMBADF-' + Math.random().toString(36).substring(2,10).toUpperCase();
 }
 
 async function salvaFirestore(doc){
-  try{
-    await db.collection('ingressos').doc(doc.id).set(doc);
-  }catch(e){
-    console.warn("Erro ao salvar Firestore:", e);
-  }
+    try {
+        await db.collection("ingressos").doc(doc.id).set(doc);
+    } catch (e){
+        console.warn("Erro ao salvar Firestore:", e);
+    }
 }
 
+// =============================
+// GERAR INGRESSOS
+// =============================
 document.getElementById("btnGen").addEventListener("click", async () => {
-  const user = auth.currentUser;
-  if (!user) return alert("Usuário não logado");
 
-  const qtd = Number(document.getElementById("qtd").value);
-  const file = document.getElementById("templateImg").files[0];
-  const clienteNome = document.getElementById("clienteNome").value.trim();
-  const clienteEmail = document.getElementById("clienteEmail").value.trim();
+    const qtd = Number(document.getElementById("qtd").value);
+    const file = document.getElementById("templateImg").files[0];
 
-  if (!file) return alert("Selecione uma imagem de template");
-  if (!clienteNome || !clienteEmail) return alert("Preencha nome e email do cliente");
+    if (!file) return alert("Selecione uma imagem de template");
+    if (qtd < 1) return alert("Quantidade inválida");
 
-  const imgURL = URL.createObjectURL(file);
-  const out = document.getElementById("resultado");
-  out.innerHTML = "";
+    const imgURL = URL.createObjectURL(file);
+    const out = document.getElementById("resultado");
+    out.innerHTML = "";
 
-  for (let i = 0; i < qtd; i++) {
-    const id = gerarID();
+    for (let i = 0; i < qtd; i++){
+        
+        const id = gerarID();
 
-    const doc = {
-      id: id,
-      evento: "Samba de Férias",
-      status: "pendente",
-      vendedorId: user.uid,
-      cliente: { nome: clienteNome, email: clienteEmail },
-      geradoEm: firebase.firestore.FieldValue.serverTimestamp()
-    };
+        const doc = {
+            id: id,
+            evento: "Samba de Férias",
+            template: "upload",
+            statusPagamento: "pendente",
+            statusEnvio: "pendente",
+            geradoEm: firebase.firestore.FieldValue.serverTimestamp()
+        };
 
-    await salvaFirestore(doc);
+        await salvaFirestore(doc);
 
-    const card = document.createElement("div");
-    card.style.marginBottom = "16px";
-    card.innerHTML = `
-      <div style="position:relative;display:inline-block;">
-        <img src="${imgURL}" style="width:340px;border-radius:8px;">
-        <div id="qr-${id}" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:110px;height:110px;"></div>
-      </div>
-      <div><b>ID:</b> ${id}</div>
-      <button onclick="baixar('${id}')" style="margin-top:6px;padding:8px;background:#2e7d32;color:white;border:none;border-radius:6px;">Baixar PNG</button>
-    `;
-    out.appendChild(card);
+        // cria o card do ingresso
+        const card = document.createElement("div");
+        card.style.marginBottom = "18px";
 
-    new QRCode(document.getElementById("qr-" + id), {
-      text: id,
-      width: 110,
-      height: 110
-    });
-  }
+        card.innerHTML = `
+            <div style="position:relative;display:inline-block;">
+                <img src="${imgURL}" style="width:340px;border-radius:8px;">
+                <div id="qr-${id}" 
+                     style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+                            width:110px;height:110px;background:white;padding:4px;border-radius:8px;">
+                </div>
+            </div>
 
-  alert("Ingressos gerados!");
+            <div><b>ID:</b> ${id}</div>
+            <button onclick="baixar('${id}')" 
+                style="margin-top:6px;padding:8px;background:#2e7d32;color:white;border:none;border-radius:6px;">
+                Baixar PNG
+            </button>
+        `;
+
+        out.appendChild(card);
+
+        new QRCode(document.getElementById("qr-" + id), {
+            text: id,
+            width: 110,
+            height: 110
+        });
+    }
+
+    alert("Ingressos gerados!");
 });
 
-// download como PNG
+// =============================
+// BAIXAR PNG
+// =============================
 async function baixar(id){
-  const qrEl = document.getElementById("qr-" + id);
-  const bloco = qrEl.parentElement;
 
-  const clone = bloco.cloneNode(true);
-  clone.style.position = "absolute";
-  clone.style.left = "-9999px";
-  document.body.appendChild(clone);
+    const qrEl = document.getElementById("qr-" + id);
+    const bloco = qrEl.parentElement;
 
-  setTimeout(async () => {
-    const canvas = await html2canvas(clone);
-    const link = document.createElement("a");
-    link.href = canvas.toDataURL("image/png");
-    link.download = id + ".png";
-    link.click();
-    document.body.removeChild(clone);
-  }, 200);
+    const clone = bloco.cloneNode(true);
+    clone.style.position = "absolute";
+    clone.style.left = "-9999px";
+
+    document.body.appendChild(clone);
+
+    setTimeout(async () => {
+
+        const canvas = await html2canvas(clone);
+
+        const link = document.createElement("a");
+        link.href = canvas.toDataURL("image/png");
+        link.download = id + ".png";
+        link.click();
+
+        document.body.removeChild(clone);
+
+    }, 200);
 }
+
 </script>
 </body>
 </html>
-
-
