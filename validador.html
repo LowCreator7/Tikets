@@ -23,10 +23,8 @@ const firebaseConfig = {
   measurementId: "G-QGDNMN0VQ5"
 };
 
-// Inicializa Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Atalhos
 const db = firebase.firestore();
 const auth = firebase.auth();
 </script>
@@ -34,12 +32,17 @@ const auth = firebase.auth();
 <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 
-<body style="font-family:Arial,Helvetica,sans-serif; padding:20px; text-align:center; background:#f4f7fb; color:#0d47a1;">
+<body playsinline webkit-playsinline 
+      style="font-family:Arial,Helvetica,sans-serif; padding:20px; text-align:center; background:#f4f7fb; color:#0d47a1;">
 
   <h2>Validador de Ingressos</h2>
   <p>Aponte a câmera para o QR Code</p>
 
-  <div id="camera" style="max-width:420px;margin:12px auto;"></div>
+  <div id="camera"
+       allow="camera; autoplay; fullscreen; encrypted-media; clipboard-read; clipboard-write"
+       style="max-width:420px;margin:12px auto;">
+  </div>
+
   <div id="status" style="margin-top:12px;font-weight:bold;"></div>
 
   <a href="index.html" style="display:block;margin-top:12px;color:#1565c0;">⬅ Voltar</a>
@@ -53,7 +56,6 @@ whenReady(() => {
 
   async function iniciarScanner() {
     try {
-      // tenta câmera traseira
       await scanner.start(
         { facingMode: { exact: "environment" } },
         { fps: 10, qrbox: 250 },
@@ -63,7 +65,6 @@ whenReady(() => {
       console.warn("Falhou traseira:", err1);
 
       try {
-        // tenta qualquer câmera disponível (iPhone aceita isso)
         const devices = await Html5Qrcode.getCameras();
         await scanner.start(
           devices[0].id,
@@ -120,4 +121,3 @@ whenReady(() => {
 
 </body>
 </html>
-
