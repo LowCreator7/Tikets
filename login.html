@@ -1,68 +1,162 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Login - Samba de Férias</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Login - Sistema de Ingressos</title>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
-<script>
-// 🔥 Configuração do Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyD4Mwgq2qmjZ33VVR7RUFjZViUXJ3Ijpgk",
-  authDomain: "sistemaingressos-a98f0.firebaseapp.com",
-  projectId: "sistemaingressos-a98f0",
-  storageBucket: "sistemaingressos-a98f0.firebasestorage.app",
-  messagingSenderId: "1227812590",
-  appId: "1:1227812590:web:07107c0e3069fe9dfbcdff",
-  measurementId: "G-QGDNMN0VQ5"
-};
+<style>
+body {
+    margin: 0;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    font-family: "Segoe UI", Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: #fff;
+}
 
-// Inicializa Firebase
+.login-box {
+    background: #ffffff15;
+    padding: 40px;
+    border-radius: 16px;
+    width: 330px;
+    box-shadow: 0 8px 20px #0004;
+    backdrop-filter: blur(6px);
+    text-align: center;
+}
+
+h2 {
+    margin: 0 0 20px;
+    font-size: 26px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    margin-bottom: 14px;
+    font-size: 15px;
+}
+
+button {
+    width: 100%;
+    background: #29b6f6;
+    color: #fff;
+    padding: 12px;
+    border: none;
+    font-size: 16px;
+    border-radius: 10px;
+    margin-top: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #0288d1;
+}
+
+.error-box {
+    background: #ff5252cc;
+    padding: 10px;
+    margin-top: 12px;
+    border-radius: 10px;
+    display: none;
+    font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="login-box">
+    <h2>Entrar</h2>
+
+    <input type="email" id="email" placeholder="E-mail" />
+    <input type="password" id="senha" placeholder="Senha" />
+
+    <button onclick="login()">Acessar</button>
+
+    <div id="erro" class="error-box"></div>
+</div>
+
+<script>
+// ================= FIREBASE CONFIG =================
+const firebaseConfig = {
+    apiKey: "AIzaSyD4Mwgq2qmjZ33VVR7RUFjZViUXJ3Ijpgk",
+    authDomain: "sistemaingressos-a98f0.firebaseapp.com",
+    projectId: "sistemaingressos-a98f0",
+    storageBucket: "sistemaingressos-a98f0.firebasestorage.app",
+    messagingSenderId: "1227812590",
+    appId: "1:1227812590:web:07107c0e3069fe9dfbcdff"
+};
 firebase.initializeApp(firebaseConfig);
 
-// Atalhos
-const db = firebase.firestore();
 const auth = firebase.auth();
-</script>
 
-</head>
-<body style="font-family:Arial,Helvetica,sans-serif; background:#f4f7fb; color:#0d47a1; text-align:center; padding:40px;">
+// ================= FUNÇÃO LOGIN =================
+function login() {
+    const email = document.getElementById("email").value.trim();
+    const senha = document.getElementById("senha").value;
 
-  <h2>Login Administrativo</h2>
+    const erro = document.getElementById("erro");
+    erro.style.display = "none";
 
-  <div style="max-width:360px;margin:20px auto;background:white;padding:20px;border-radius:8px;">
-    <input id="email" placeholder="Email" style="width:100%;padding:10px;margin:8px 0"/><br/>
-    <input id="password" placeholder="Senha" type="password" style="width:100%;padding:10px;margin:8px 0"/><br/>
-    <button id="btnLogin" style="width:100%;padding:10px;background:#1565c0;color:white;border:none;border-radius:6px;">Entrar</button>
-    <div style="margin-top:10px;">
-      <a href="index.html" style="color:#1565c0;text-decoration:none;">Voltar</a>
-    </div>
-    <p style="font-size:13px;color:#666;margin-top:8px;">(Se não tiver usuário, crie um no console do Firebase Auth - Email/Password)</p>
-  </div>
+    if (!email || !senha) {
+        showError("Preencha todos os campos.");
+        return;
+    }
 
-<script>
-// Evento de login
-auth.onAuthStateChanged(user => {
-  if (user) {
-    window.location.href = "controle.html";
-  }
-});
+    auth.signInWithEmailAndPassword(email, senha)
+        .then(userCred => {
+            const emailLogado = userCred.user.email;
 
-document.getElementById("btnLogin").addEventListener("click", async () => {
-  const email = document.getElementById("email").value;
-  const pass = document.getElementById("password").value;
+            // ADMIN
+            if (emailLogado.endsWith("@admin.com")) {
+                window.location.href = "admin.html";
+                return;
+            }
 
-  try {
-    await auth.signInWithEmailAndPassword(email, pass);
-  } catch (err) {
-    alert("Erro ao logar: " + err.message);
-  }
-});
+            // VENDEDOR
+            if (emailLogado.endsWith("@staff.com")) {
+                window.location.href = "painel.html";
+                return;
+            }
+
+            // OUTROS → bloqueado
+            showError("Este e-mail não tem autorização.");
+            auth.signOut();
+        })
+        .catch(err => {
+            showError("Erro: " + traduzErro(err.code));
+        });
+}
+
+// ================= ERROS BONITOS =================
+function traduzErro(code) {
+    switch(code) {
+        case "auth/user-not-found": return "Usuário não encontrado.";
+        case "auth/wrong-password": return "Senha incorreta.";
+        case "auth/invalid-email": return "E-mail inválido.";
+        case "auth/too-many-requests": return "Muitas tentativas. Aguarde um momento.";
+        default: return "Erro ao fazer login.";
+    }
+}
+
+function showError(msg) {
+    const erro = document.getElementById("erro");
+    erro.innerText = msg;
+    erro.style.display = "block";
+}
 </script>
 
 </body>
