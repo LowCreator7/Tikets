@@ -7,12 +7,12 @@
 
 <!-- Firebase compat -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
 <!-- QRious -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
-<!-- Estilo -->
 <style>
     body { margin:0; background:#F3F4F6; font-family:Arial, sans-serif; color:#111827; }
     .container {
@@ -73,9 +73,10 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const auth = firebase.auth();
 
 
-// --------- Função para formatar data estilo "18 de novembro de 2025 às 15:43:03 UTC-3" ---------
+// --------- Funções auxiliares ---------
 function formatarDataCompleta() {
     const agora = new Date();
     return agora.toLocaleString("pt-BR", {
@@ -90,7 +91,6 @@ function formatarDataCompleta() {
     }) + " UTC-3";
 }
 
-// --------- ID estilo: SAMBADF-XXXXXXX ---------
 function gerarIdIngresso() {
     const prefixo = "SAMBADF-";
     const random = Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -101,9 +101,19 @@ function gerarIdIngresso() {
 // -------------- Função gerar -----------------
 document.getElementById("btnGerar").addEventListener("click", async () => {
 
+    const usuario = auth.currentUser;
     const msg = document.getElementById("mensagem");
+
+    if (!usuario) {
+        msg.textContent = "Erro: Usuário não autenticado.";
+        msg.className = "msg error";
+        msg.style.display = "block";
+        return;
+    }
+
     msg.style.display = "none";
 
+    const vendedorUid = usuario.uid;
     const template = document.getElementById("template").value;
     const qtd = Number(document.getElementById("quantidade").value);
 
@@ -142,12 +152,9 @@ document.getElementById("btnGerar").addEventListener("click", async () => {
             canvas.width = templateImg.width;
             canvas.height = templateImg.height;
 
-            // Desenha template
             ctx.drawImage(templateImg, 0, 0);
 
-            // QR centralizado
             const qrSize = 350;
-
             ctx.drawImage(
                 qrCanvas,
                 (canvas.width / 2) - (qrSize / 2),
@@ -156,21 +163,22 @@ document.getElementById("btnGerar").addEventListener("click", async () => {
                 qrSize
             );
 
-            // Baixar PNG automaticamente
+            // Download PNG
             const link = document.createElement("a");
             link.href = canvas.toDataURL("image/png");
             link.download = `${ingressoId}.png`;
             link.click();
 
-            // ----------- Salvar no Firestore NO NOVO PADRÃO -------------
-           await db.collection("ingressos").doc(ingressoId).set({
-    id: ingressoId,
-    evento: "Samba de Férias",
-    geradoEm: dataGerada,
-    statusEnvio: "pendente",
-    statusPagamento: "pendente",
-    template: template
-});
+            // ----------- Salvar no Firestore COM vendedorUid -------------
+            await db.collection("ingressos").doc(ingressoId).set({
+                id: ingressoId,
+                evento: "Samba de Férias",
+                geradoEm: dataGerada,
+                statusEnvio: "pendente",
+                statusPagamento: "pendente",
+                template: template,
+                vendedorUid: vendedorUid
+            });
 
         }
 
@@ -189,4 +197,3 @@ document.getElementById("btnGerar").addEventListener("click", async () => {
 
 </body>
 </html>
-
