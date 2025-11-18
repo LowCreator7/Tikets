@@ -2,13 +2,12 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Painel de Controle — Samba de Férias</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Vendas</title>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-
+<script src="firebase.js"></script>
 <style>
 /* --- CSS mantém igual ao seu anterior --- */
 :root{
@@ -55,22 +54,20 @@ tbody tr:hover{background:#f8fbff;}
 </style>
 </head>
 <body>
-
 <div class="wrap">
   <div class="top-bar">
     <h1>Painel de Controle</h1>
-    <a href="index.html" class="back">⬅ Voltar</a>
+    <a href="index.html" class="back">⬅ Logout</a>
   </div>
 
   <div class="stats">
     <div class="stat"><h2 id="sTotal">0</h2><span>Total de ingressos</span></div>
-    <div class="stat"><h2 id="sUsed">0</h2><span>Usados</span></div>
-    <div class="stat"><h2 id="sPend">0</h2><span>Pendentes</span></div>
+    <div class="stat"><h2 id="sPaid">0</h2><span>Pagos</span></div>
+    <div class="stat"><h2 id="sSent">0</h2><span>Enviados</span></div>
   </div>
 
   <div class="search-bar">
-    <input id="searchInput" class="search-input" type="text" placeholder="Buscar por ID...">
-    <button onclick="exportar()" class="btn">Exportar CSV</button>
+    <input id="searchInput" class="search-input" type="text" placeholder="Buscar por ID ou Cliente...">
   </div>
 
   <div class="table-wrap">
@@ -78,91 +75,85 @@ tbody tr:hover{background:#f8fbff;}
       <thead>
         <tr>
           <th>ID</th>
+          <th>Cliente</th>
           <th>Status</th>
-          <th>Usado em</th>
+          <th>Ações</th>
         </tr>
       </thead>
-      <tbody id="tableBody">
-        <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">Carregando...</td></tr>
-      </tbody>
+      <tbody id="tableBody"><tr><td colspan="4" style="text-align:center;color:#64748b;padding:20px;">Carregando...</td></tr></tbody>
     </table>
   </div>
 </div>
 
-<script type="module">
-import { db, auth } from './firebase.js';
-
-// Protege página
+<script>
 auth.onAuthStateChanged(user => {
   if (!user) window.location.href = "login.html";
-});
 
-let ingressos = [];
-
-/* Realtime */
-db.collection("ingressos").onSnapshot(snapshot => {
-  ingressos = [];
-  snapshot.forEach(doc=>{
-    const d = doc.data();
-    ingressos.push({
-      id: d.id,
-      status: d.status,
-      usadoEm: d.usadoEm ? (d.usadoEm.toDate ? d.usadoEm.toDate().toLocaleString("pt-BR") : d.usadoEm) : "—"
+  // realtime apenas ingressos do vendedor
+  db.collection("ingressos").where("vendedorId","==",user.uid)
+    .onSnapshot(snapshot => {
+      const ingressos = [];
+      snapshot.forEach(doc => ingressos.push({ id: doc.id, ...doc.data() }));
+      atualizarStats(ingressos);
+      renderTabela(ingressos);
     });
-  });
-
-  atualizarStats();
-  renderTabela();
 });
 
-/* Stats */
-function atualizarStats(){
-  const total = ingressos.length;
-  const usados = ingressos.filter(i=>i.status==="usado").length;
-  const pend = total - usados;
-  document.getElementById("sTotal").textContent = total;
-  document.getElementById("sUsed").textContent = usados;
-  document.getElementById("sPend").textContent = pend;
+function atualizarStats(ingressos){
+  document.getElementById("sTotal").textContent = ingressos.length;
+  const pagos = ingressos.filter(i=>i.status==="pago").length;
+  const enviados = ingressos.filter(i=>i.status==="enviado").length;
+  document.getElementById("sPaid").textContent = pagos;
+  document.getElementById("sSent").textContent = enviados;
 }
 
-/* Table */
-function renderTabela(){
+function renderTabela(ingressos){
   const body = document.getElementById("tableBody");
-  body.innerHTML = "";
   const search = document.getElementById("searchInput").value.toLowerCase();
-  const filtered = ingressos.filter(i=>i.id.toLowerCase().includes(search));
+  body.innerHTML = "";
+
+  const filtered = ingressos.filter(i =>
+    i.id.toLowerCase().includes(search) || i.cliente.nome.toLowerCase().includes(search)
+  );
 
   if(filtered.length===0){
-    body.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--muted);">Nenhum ingresso encontrado</td></tr>`;
+    body.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:#64748b;">Nenhum ingresso encontrado</td></tr>`;
     return;
   }
 
-  filtered.forEach(item=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${item.id}</td><td><span class="status ${item.status}">${item.status}</span></td><td>${item.usadoEm}</td>`;
+  filtered.forEach(i=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i.id}</td>
+      <td>${i.cliente.nome}</td>
+      <td><span class="status ${i.status}">${i.status}</span></td>
+      <td>
+        ${i.status==="pendente"? `<button onclick="atualizarStatus('${i.id}','pago')">Pago</button>` : ""}
+        ${i.status==="pago"? `<button onclick="atualizarStatus('${i.id}','enviado')">Enviado</button>` : ""}
+      </td>
+    `;
     body.appendChild(tr);
   });
 }
 
-document.getElementById("searchInput").addEventListener("input", renderTabela);
-
-/* Export CSV */
-function exportar(){
-  if(ingressos.length===0) return;
-  let csv=`ID,Status,Usado Em\n`;
-  ingressos.forEach(i=>{
-    csv+=`"${i.id}","${i.status}","${i.usadoEm}"\n`;
-  });
-  const blob=new Blob([csv],{type:"text/csv"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;
-  a.download="ingressos.csv";
-  a.click();
-  URL.revokeObjectURL(url);
+function atualizarStatus(id, novoStatus){
+  db.collection("ingressos").doc(id).update({ status: novoStatus })
+    .then(()=>alert(`Status do ingresso ${id} atualizado para ${novoStatus}`))
+    .catch(e=>alert("Erro: "+e));
 }
-</script>
 
+document.getElementById("searchInput").addEventListener("input",()=>{
+  const user = auth.currentUser;
+  if(!user) return;
+  db.collection("ingressos").where("vendedorId","==",user.uid)
+    .get()
+    .then(snapshot=>{
+      const ingressos = [];
+      snapshot.forEach(doc => ingressos.push({ id: doc.id, ...doc.data() }));
+      renderTabela(ingressos);
+    });
+});
+</script>
 </body>
 </html>
 
