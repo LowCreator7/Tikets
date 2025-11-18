@@ -1,0 +1,134 @@
+<!-- validador.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Validador - Samba de Férias</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+<script>
+// 🔥 Configuração do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyD4Mwgq2qmjZ33VVR7RUFjZViUXJ3Ijpgk",
+  authDomain: "sistemaingressos-a98f0.firebaseapp.com",
+  projectId: "sistemaingressos-a98f0",
+  storageBucket: "sistemaingressos-a98f0.firebasestorage.app",
+  messagingSenderId: "1227812590",
+  appId: "1:1227812590:web:07107c0e3069fe9dfbcdff",
+  measurementId: "G-QGDNMN0VQ5"
+};
+
+// Inicializa Firebase
+firebase.initializeApp(firebaseConfig);
+
+// Atalhos
+const db = firebase.firestore();
+const auth = firebase.auth();
+</script>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+
+<body style="font-family:Arial,Helvetica,sans-serif; padding:20px; text-align:center; background:#f4f7fb; color:#0d47a1;">
+
+  <h2>Validador de Ingressos</h2>
+  <p>Aponte a câmera para o QR Code</p>
+
+  <div id="camera" style="max-width:420px;margin:12px auto;"></div>
+  <div id="status" style="margin-top:12px;font-weight:bold;"></div>
+
+  <a href="index.html" style="display:block;margin-top:12px;color:#1565c0;">⬅ Voltar</a>
+
+<script>
+function whenReady(fn){
+  if(window.db) return fn();
+  setTimeout(()=>whenReady(fn),150);
+}
+
+whenReady(() => {
+  const status = document.getElementById('status');
+
+  function marcarLocal(id){
+    const list = JSON.parse(localStorage.getItem('ingressos_samba')) || [];
+    const idx = list.findIndex(x=>x.id === id);
+    if(idx >= 0){
+      list[idx].status = 'usado';
+      localStorage.setItem('ingressos_samba', JSON.stringify(list));
+    }
+  }
+
+  const scanner = new Html5Qrcode("camera");
+
+  scanner.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+
+    async (msg) => {
+      const id = msg.split("\n")[0].trim();
+      status.textContent = "Lendo: " + id;
+
+      try {
+        const ref = db.collection("ingressos").doc(id);
+        const snap = await ref.get();
+
+        if (!snap.exists) {
+          status.style.color = "red";
+          status.textContent = "❌ Ingresso INVÁLIDO";
+          return;
+        }
+
+        const data = snap.data();
+
+        if (data.status === "usado") {
+          status.style.color = "orange";
+          status.textContent = "⚠️ Ingresso JÁ UTILIZADO";
+          return;
+        }
+
+        await ref.update({
+          status: "usado",
+          usadoEm: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        marcarLocal(id);
+
+        status.style.color = "green";
+        status.textContent = "✔️ Ingresso VALIDADO (OK)";
+      }
+
+      catch (e) {
+        const list = JSON.parse(localStorage.getItem("ingressos_samba")) || [];
+        const idx = list.findIndex(x => x.id === id);
+
+        if (idx < 0) {
+          status.style.color = "red";
+          status.textContent = "❌ Ingresso INVÁLIDO (offline)";
+          return;
+        }
+
+        if (list[idx].status === "usado") {
+          status.style.color = "orange";
+          status.textContent = "⚠️ JÁ UTILIZADO (offline)";
+          return;
+        }
+
+        list[idx].status = "usado";
+        localStorage.setItem("ingressos_samba", JSON.stringify(list));
+
+        status.style.color = "green";
+        status.textContent = "✔️ VALIDADO (offline)";
+      }
+    },
+
+    (err) => {}
+  );
+});
+</script>
+
+</body>
+</html>

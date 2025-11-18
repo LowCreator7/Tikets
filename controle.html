@@ -1,0 +1,182 @@
+<!-- controle.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Controle - Samba de Férias</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+<style>
+table td, table th { font-size: 14px; }
+@media(max-width: 600px){
+  table td, table th {
+    padding: 6px;
+    font-size: 12px;
+  }
+}
+</style>
+
+<script>
+// 🔥 Configuração do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyD4Mwgq2qmjZ33VVR7RUFjZViUXJ3Ijpgk",
+  authDomain: "sistemaingressos-a98f0.firebaseapp.com",
+  projectId: "sistemaingressos-a98f0",
+  storageBucket: "sistemaingressos-a98f0.firebasestorage.app",
+  messagingSenderId: "1227812590",
+  appId: "1:1227812590:web:07107c0e3069fe9dfbcdff",
+  measurementId: "G-QGDNMN0VQ5"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+</script>
+
+</head>
+
+<body style="font-family:Arial,Helvetica,sans-serif;padding:16px;background:#f4f7fb;color:#0d47a1;">
+
+<h2>Painel de Controle</h2>
+
+<div style="max-width:900px;margin:12px auto;background:white;padding:12px;border-radius:8px;">
+  
+  <div>
+    <button id="btnLogout" style="float:right;background:#c62828;color:white;padding:8px;border:none;border-radius:6px;">Logout</button>
+    <a href="index.html">⬅ Voltar</a>
+  </div>
+
+  <div style="clear:both"></div>
+
+  <div style="margin-top:12px;">
+    <strong>Total gerados:</strong> <span id="total">0</span> |
+    <strong>Usados:</strong> <span id="used">0</span> |
+    <strong>Pendentes:</strong> <span id="pend">0</span>
+  </div>
+
+  <input id="buscar" placeholder="Buscar por ID..." style="margin-top:12px;padding:8px;width:100%"/>
+
+  <table id="table" style="width:100%;margin-top:12px;border-collapse:collapse;">
+    <thead>
+      <tr style="background:#1565c0;color:white">
+        <th style="padding:8px">ID</th>
+        <th style="padding:8px">Status</th>
+        <th style="padding:8px">Gerado Em</th>
+        <th style="padding:8px">Ações</th>
+      </tr>
+    </thead>
+    <tbody id="body"></tbody>
+  </table>
+</div>
+
+<script>
+function whenReady(fn){ if(window.auth && window.db) return fn(); setTimeout(()=>whenReady(fn),150); }
+
+whenReady(() => {
+
+  auth.onAuthStateChanged(user => {
+    if(!user) window.location.href = 'login.html';
+  });
+
+  const body = document.getElementById('body');
+  const totalEl = document.getElementById('total');
+  const usedEl = document.getElementById('used');
+  const pendEl = document.getElementById('pend');
+  const buscar = document.getElementById('buscar');
+
+  document.getElementById('btnLogout').addEventListener('click', ()=> auth.signOut());
+
+  db.collection('ingressos').orderBy('geradoEm','desc').onSnapshot(snapshot=>{
+    body.innerHTML = '';
+    let total=0, used=0, pend=0;
+
+    snapshot.forEach(doc=>{
+      total++;
+      const d = doc.data();
+
+      // STATUS
+      if(d.status === 'usado') used++; else pend++;
+
+      // ID REAL DO FIRESTORE
+      const realId = doc.id;
+
+      // ID DO INGRESSO GERADO POR VOCÊ (exibir)
+      const idExibido = d.id || realId;
+
+      let acoes = '';
+
+      if(d.status === 'pendente'){
+        acoes += `<button onclick="marcar('${realId}')" 
+                    style="padding:6px;background:#2e7d32;color:white;border:none;border-radius:6px;">
+                    Marcar usado
+                  </button>`;
+      } else {
+        acoes += `<span style="color:#2e7d32;font-weight:bold;">✔ usado</span>`;
+      }
+
+      acoes += `
+        <button onclick="excluir('${realId}')" 
+                style="padding:6px;margin-left:6px;background:#555;color:white;border:none;border-radius:6px;">
+                Excluir
+        </button>
+      `;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="padding:8px">${idExibido}</td>
+        <td style="padding:8px">${d.status}</td>
+        <td style="padding:8px">
+            ${d.geradoEm?.toDate ? d.geradoEm.toDate().toLocaleString() : d.geradoEm || ""}
+        </td>
+        <td style="padding:8px">${acoes}</td>
+      `;
+
+      body.appendChild(tr);
+    });
+
+    totalEl.textContent = total;
+    usedEl.textContent = used;
+    pendEl.textContent = pend;
+  });
+
+  // 🌟 Marca como usado usando o ID REAL DO FIRESTORE
+  window.marcar = async (id)=>{
+    if(!confirm("Confirmar validação manual deste ingresso?")) return;
+    try{ 
+      await db.collection('ingressos').doc(id).update({
+        status:'usado',
+        usadoEm: firebase.firestore.FieldValue.serverTimestamp()
+      }); 
+    }
+    catch(e){ alert('Erro ao marcar: ' + e.message); }
+  };
+
+  // 🌟 Excluir usando o ID REAL DO FIRESTORE
+  window.excluir = async (id)=>{
+    if(!confirm('Excluir ingresso?')) return;
+    try{ 
+      await db.collection('ingressos').doc(id).delete(); 
+    } catch(e){ 
+      alert('Erro ao excluir: ' + e.message); 
+    }
+  };
+
+  // 🔎 Busca pelo ID exibido
+  buscar.addEventListener('input', ()=>{
+    const termo = buscar.value.toUpperCase();
+    Array.from(body.children).forEach(tr=>{
+      const id = tr.children[0].textContent.toUpperCase();
+      tr.style.display = id.includes(termo) ? '' : 'none';
+    });
+  });
+
+});
+</script>
+
+</body>
+</html>

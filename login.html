@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Login - Samba de Férias</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+<script>
+// 🔥 Configuração do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyD4Mwgq2qmjZ33VVR7RUFjZViUXJ3Ijpgk",
+  authDomain: "sistemaingressos-a98f0.firebaseapp.com",
+  projectId: "sistemaingressos-a98f0",
+  storageBucket: "sistemaingressos-a98f0.firebasestorage.app",
+  messagingSenderId: "1227812590",
+  appId: "1:1227812590:web:07107c0e3069fe9dfbcdff",
+  measurementId: "G-QGDNMN0VQ5"
+};
+
+// Inicializa Firebase
+firebase.initializeApp(firebaseConfig);
+
+// Atalhos
+const db = firebase.firestore();
+const auth = firebase.auth();
+</script>
+
+</head>
+<body style="font-family:Arial,Helvetica,sans-serif; background:#f4f7fb; color:#0d47a1; text-align:center; padding:40px;">
+
+  <h2>Login Administrativo</h2>
+
+  <div style="max-width:360px;margin:20px auto;background:white;padding:20px;border-radius:8px;">
+    <input id="email" placeholder="Email" style="width:100%;padding:10px;margin:8px 0"/><br/>
+    <input id="password" placeholder="Senha" type="password" style="width:100%;padding:10px;margin:8px 0"/><br/>
+    <button id="btnLogin" style="width:100%;padding:10px;background:#1565c0;color:white;border:none;border-radius:6px;">Entrar</button>
+    <div style="margin-top:10px;">
+      <a href="index.html" style="color:#1565c0;text-decoration:none;">Voltar</a>
+    </div>
+    <p style="font-size:13px;color:#666;margin-top:8px;">(Se não tiver usuário, crie um no console do Firebase Auth - Email/Password)</p>
+  </div>
+
+<script>
+// Evento de login
+auth.onAuthStateChanged(user => {
+  if (user) {
+    window.location.href = "controle.html";
+  }
+});
+
+document.getElementById("btnLogin").addEventListener("click", async () => {
+  const email = document.getElementById("email").value;
+  const pass = document.getElementById("password").value;
+
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch (err) {
+    alert("Erro ao logar: " + err.message);
+  }
+});
+</script>
+
+</body>
+</html>
