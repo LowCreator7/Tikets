@@ -45,90 +45,79 @@ const auth = firebase.auth();
   <a href="index.html" style="display:block;margin-top:12px;color:#1565c0;">⬅ Voltar</a>
 
 <script>
-function whenReady(fn){
-  if(window.db) return fn();
-  setTimeout(()=>whenReady(fn),150);
-}
+function whenReady(fn){ if(window.db) return fn(); setTimeout(()=>whenReady(fn),150); }
 
 whenReady(() => {
   const status = document.getElementById('status');
+  const scanner = new Html5Qrcode("camera");
 
-  function marcarLocal(id){
-    const list = JSON.parse(localStorage.getItem('ingressos_samba')) || [];
-    const idx = list.findIndex(x=>x.id === id);
-    if(idx >= 0){
-      list[idx].status = 'usado';
-      localStorage.setItem('ingressos_samba', JSON.stringify(list));
+  async function iniciarScanner() {
+    try {
+      // tenta câmera traseira
+      await scanner.start(
+        { facingMode: { exact: "environment" } },
+        { fps: 10, qrbox: 250 },
+        onScan
+      );
+    } catch (err1) {
+      console.warn("Falhou traseira:", err1);
+
+      try {
+        // tenta qualquer câmera disponível (iPhone aceita isso)
+        const devices = await Html5Qrcode.getCameras();
+        await scanner.start(
+          devices[0].id,
+          { fps: 10, qrbox: 250 },
+          onScan
+        );
+      } catch (err2) {
+        console.error("Erro geral:", err2);
+        status.textContent = "⚠️ O iPhone bloqueou a câmera. Verifique permissões.";
+        status.style.color = "red";
+      }
     }
   }
 
-  const scanner = new Html5Qrcode("camera");
+  function onScan(decodedText){
+    validar(decodedText.trim());
+  }
 
-  scanner.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
+  async function validar(id){
+    try {
+      const ref = db.collection("ingressos").doc(id);
+      const doc = await ref.get();
 
-    async (msg) => {
-      const id = msg.split("\n")[0].trim();
-      status.textContent = "Lendo: " + id;
-
-      try {
-        const ref = db.collection("ingressos").doc(id);
-        const snap = await ref.get();
-
-        if (!snap.exists) {
-          status.style.color = "red";
-          status.textContent = "❌ Ingresso INVÁLIDO";
-          return;
-        }
-
-        const data = snap.data();
-
-        if (data.status === "usado") {
-          status.style.color = "orange";
-          status.textContent = "⚠️ Ingresso JÁ UTILIZADO";
-          return;
-        }
-
-        await ref.update({
-          status: "usado",
-          usadoEm: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        marcarLocal(id);
-
-        status.style.color = "green";
-        status.textContent = "✔️ Ingresso VALIDADO (OK)";
+      if(!doc.exists){
+        status.textContent = "❌ Ingresso inválido";
+        status.style.color = "red";
+        return;
       }
 
-      catch (e) {
-        const list = JSON.parse(localStorage.getItem("ingressos_samba")) || [];
-        const idx = list.findIndex(x => x.id === id);
+      const data = doc.data();
 
-        if (idx < 0) {
-          status.style.color = "red";
-          status.textContent = "❌ Ingresso INVÁLIDO (offline)";
-          return;
-        }
-
-        if (list[idx].status === "usado") {
-          status.style.color = "orange";
-          status.textContent = "⚠️ JÁ UTILIZADO (offline)";
-          return;
-        }
-
-        list[idx].status = "usado";
-        localStorage.setItem("ingressos_samba", JSON.stringify(list));
-
-        status.style.color = "green";
-        status.textContent = "✔️ VALIDADO (offline)";
+      if(data.status === "usado"){
+        status.textContent = "⚠️ Já utilizado";
+        status.style.color = "orange";
+        return;
       }
-    },
 
-    (err) => {}
-  );
+      await ref.update({
+        status: "usado",
+        usadoEm: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      status.textContent = "✔️ Validado com sucesso";
+      status.style.color = "green";
+    } catch(e){
+      status.textContent = "Erro: " + e.message;
+      status.style.color = "red";
+    }
+  }
+
+  iniciarScanner();
 });
 </script>
 
 </body>
 </html>
+
