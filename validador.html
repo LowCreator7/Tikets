@@ -20,7 +20,9 @@
     #reader {
       width: 100%;
       max-width: 350px;
+      height: 350px; /* Importante para iPhone */
       margin: auto;
+      background: #000;
     }
 
     #resultado {
@@ -51,55 +53,62 @@
   <button onclick="window.location.href='index.html'">Voltar</button>
 
   <script>
+    // Função chamada quando o QR Code é lido
     function onScanSuccess(decodedText) {
       document.getElementById("resultado").innerHTML =
         "🎫 Ingresso encontrado:<br>" + decodedText;
-
-      // Aqui depois você pode consultar o Firebase se quiser
     }
 
+    // Caso o QR não seja lido
     function onScanError(error) {
       console.warn(error);
     }
 
-    // Inicializa o scanner
-    document.addEventListener("DOMContentLoaded", () => {
-      const html5QrCode = new Html5Qrcode("reader");
+    // Inicia o scanner com prioridade para a câmera traseira
+    async function iniciarScanner() {
+      const resultado = document.getElementById("resultado");
 
-      const config = {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0
-      };
+      try {
+        const devices = await Html5Qrcode.getCameras();
 
-      // Tenta câmera traseira — se falhar, tenta qualquer câmera
-      Html5Qrcode.getCameras().then(devices => {
-        if (devices.length === 1) {
-          alert("Nenhuma câmera encontrada.");
+        if (!devices || devices.length === 0) {
+          resultado.textContent = "Nenhuma câmera encontrada";
+          resultado.style.color = "red";
           return;
         }
 
-        let cameraId = devices[2].id;
+        // Identifica a câmera traseira
+        let cameraId = devices.find(d =>
+          d.label.toLowerCase().includes("back") ||
+          d.label.toLowerCase().includes("rear") ||
+          d.label.toLowerCase().includes("traseira")
+        )?.id;
 
-        // Procura câmera traseira
-        devices.forEach(d => {
-          if (d.label.toLowerCase().includes("back")) cameraId = d.id;
-        });
+        // Se não encontrar, usa a primeira
+        if (!cameraId) cameraId = devices[0].id;
 
-        html5QrCode.start(
+        // Cria o scanner
+        const scanner = new Html5Qrcode("reader");
+
+        // Inicia
+        await scanner.start(
           cameraId,
-          config,
+          { fps: 10, qrbox: 250 },
           onScanSuccess,
           onScanError
         );
-      }).catch(err => {
-        console.error(err);
-        alert("Erro ao acessar a câmera.");
-      });
-    });
+
+      } catch (err) {
+        console.error("Erro ao iniciar câmera:", err);
+        resultado.textContent =
+          "⚠️ Não foi possível acessar a câmera. Verifique permissões.";
+        resultado.style.color = "red";
+      }
+    }
+
+    // Start
+    iniciarScanner();
   </script>
+
 </body>
 </html>
-
-
-
