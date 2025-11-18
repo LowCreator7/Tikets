@@ -5,148 +5,146 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gerar Ingressos</title>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js"></script>
+<!-- Firebase compat -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-<!-- QR Code -->
+<!-- QRious -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
+<!-- Estilo -->
 <style>
     body {
-        margin: 0;
-        background: #F3F4F6;
-        font-family: Arial, sans-serif;
-        color: #111827;
+        margin:0;
+        background:#F3F4F6;
+        font-family:Arial, sans-serif;
+        color:#111827;
     }
 
     .container {
-        max-width: 750px;
-        margin: 50px auto;
-        background: white;
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.10);
+        max-width:750px;
+        margin:40px auto;
+        padding:25px;
+        background:white;
+        border-radius:12px;
+        box-shadow:0 3px 10px rgba(0,0,0,0.1);
     }
 
     h2 {
-        margin-top: 0;
-        font-weight: 700;
-        color: #1F2937;
-    }
-
-    label {
-        display: block;
-        margin-top: 15px;
-        font-weight: 600;
-    }
-
-    input, select {
-        width: 100%;
-        padding: 10px;
-        border-radius: 6px;
-        border: 1px solid #D1D5DB;
-        margin-top: 5px;
-    }
-
-    button {
-        margin-top: 20px;
-        width: 100%;
-        padding: 12px;
-        background: #2563EB;
-        color: white;
-        font-size: 16px;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: bold;
-    }
-
-    button:hover {
-        background: #1E40AF;
+        margin-top:0;
+        color:#1F2937;
+        font-weight:700;
     }
 
     .voltar {
-        display: inline-block;
-        margin-bottom: 20px;
-        color: #2563EB;
-        text-decoration: none;
-        font-weight: 600;
+        text-decoration:none;
+        color:#2563EB;
+        font-weight:600;
+        margin-bottom:15px;
+        display:inline-block;
+    }
+
+    label {
+        display:block;
+        margin-top:15px;
+        font-weight:600;
+    }
+
+    input, select {
+        width:100%;
+        padding:10px;
+        margin-top:6px;
+        border:1px solid #D1D5DB;
+        border-radius:6px;
+    }
+
+    button {
+        margin-top:20px;
+        width:100%;
+        padding:12px;
+        border:none;
+        background:#2563EB;
+        color:white;
+        font-weight:bold;
+        font-size:16px;
+        border-radius:8px;
+        cursor:pointer;
+    }
+
+    button:hover {
+        background:#1E40AF;
     }
 
     .msg {
-        margin-top: 20px;
-        padding: 12px;
-        border-radius: 8px;
-        font-weight: bold;
-        display: none;
+        display:none;
+        margin-top:20px;
+        padding:12px;
+        border-radius:8px;
+        font-weight:bold;
     }
-    .success { background: #D1FAE5; color: #065F46; }
-    .error { background: #FEE2E2; color: #991B1B; }
+
+    .success { background:#D1FAE5; color:#065F46; }
+    .error { background:#FEE2E2; color:#991B1B; }
 </style>
 </head>
 
 <body>
 
 <div class="container">
-    <a href="index.html" class="voltar">⬅ Voltar</a>
+
+    <a class="voltar" href="index.html">⬅ Voltar</a>
+
     <h2>Gerar Ingressos</h2>
 
-    <label>Template:</label>
+    <label>Template</label>
     <select id="template">
-        <option value="template">Template Principal</option>
+        <option value="template">Template principal</option>
     </select>
 
-    <label>Quantidade:</label>
-    <input type="number" id="quantidade" value="1" min="1">
+    <label>Quantidade</label>
+    <input id="quantidade" type="number" value="1" min="1">
 
     <button id="btnGerar">Gerar Ingressos</button>
 
     <div id="mensagem" class="msg"></div>
+
 </div>
 
-<script type="module">
-
-// ---------------- Firebase ----------------
-
+<script>
+// ---------------- Config Firebase ----------------
 const firebaseConfig = {
     apiKey: "AIzaSyD4Mwgq2qmjZ33VVR7RUFjZViUXJ3Ijpgk",
     authDomain: "sistemaingressos-a98f0.firebaseapp.com",
-    projectId: "sistemaingressos-a98f0",
-    storageBucket: "sistemaingressos-a98f0.firebasestorage.app",
-    messagingSenderId: "1227812590",
-    appId: "1:1227812590:web:07107c0e3069fe9dfbcdff"
+    projectId: "sistemaingressos-a98f0"
 };
 
-const app = firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-const storage = firebase.storage();
 
 
-// ----------------- GERAR INGRESSOS -----------------
-
+// -------------- Função gerar -----------------
 document.getElementById("btnGerar").addEventListener("click", async () => {
-    const template = document.getElementById("template").value;
-    const quantidade = Number(document.getElementById("quantidade").value);
-    const msg = document.getElementById("mensagem");
 
+    const msg = document.getElementById("mensagem");
     msg.style.display = "none";
 
-    if (!template || quantidade <= 0) {
-        msg.textContent = "Preencha todos os campos.";
+    const template = document.getElementById("template").value;
+    const qtd = Number(document.getElementById("quantidade").value);
+
+    if (qtd <= 0) {
+        msg.textContent = "Quantidade inválida.";
         msg.className = "msg error";
         msg.style.display = "block";
         return;
     }
 
     try {
-        for (let i = 0; i < quantidade; i++) {
 
-            // 1. ID único
+        for (let i = 0; i < qtd; i++) {
+
             const ingressoId = crypto.randomUUID();
 
-            // 2. Criar QR Code
+            // Criar QR code
             const qrCanvas = document.createElement("canvas");
             new QRious({
                 element: qrCanvas,
@@ -154,23 +152,23 @@ document.getElementById("btnGerar").addEventListener("click", async () => {
                 size: 500
             });
 
-            // 3. Carrega o template
+            // Carrega o template fixo
             const templateImg = new Image();
             templateImg.src = `templates/${template}.png`;
 
             await new Promise(resolve => templateImg.onload = resolve);
 
-            // 4. Canvas final
+            // Canvas final
             const canvas = document.createElement("canvas");
             const ctx = canvas.getContext("2d");
 
             canvas.width = templateImg.width;
             canvas.height = templateImg.height;
 
-            // 5. Desenha fundo
+            // Desenha template
             ctx.drawImage(templateImg, 0, 0);
 
-            // 6. Coloca QR Code CENTRALIZADO
+            // QR centralizado
             const qrSize = 350;
 
             ctx.drawImage(
@@ -181,37 +179,34 @@ document.getElementById("btnGerar").addEventListener("click", async () => {
                 qrSize
             );
 
-            // 7. Converter imagem final
-            const finalImage = canvas.toDataURL("image/png");
+            // Baixar PNG automaticamente
+            const link = document.createElement("a");
+            link.href = canvas.toDataURL("image/png");
+            link.download = `${ingressoId}.png`;
+            link.click();
 
-            // 8. Upload no Storage
-            const storageRef = storage.ref(`ingressos/${ingressoId}.png`);
-            await storageRef.putString(finalImage, "data_url");
-
-            const urlFinal = await storageRef.getDownloadURL();
-
-            // 9. Salvar no Firestore
+            // Salvar Firestore
             await db.collection("ingressos").add({
                 id: ingressoId,
                 template: template,
-                imagem: urlFinal,
                 criadoEm: new Date(),
-                enviado: false,
-                pago: false
+                pago: false,
+                enviado: false
             });
+
         }
 
-        msg.textContent = "Ingressos gerados com sucesso!";
+        msg.textContent = "Ingressos gerados e salvos no sistema!";
         msg.className = "msg success";
         msg.style.display = "block";
 
-    } catch (e) {
-        msg.textContent = "Erro: " + e.message;
+    } catch (err) {
+        msg.textContent = "Erro: " + err.message;
         msg.className = "msg error";
         msg.style.display = "block";
     }
-});
 
+});
 </script>
 
 </body>
