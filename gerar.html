@@ -14,75 +14,28 @@
 
 <!-- Estilo -->
 <style>
-    body {
-        margin:0;
-        background:#F3F4F6;
-        font-family:Arial, sans-serif;
-        color:#111827;
-    }
-
+    body { margin:0; background:#F3F4F6; font-family:Arial, sans-serif; color:#111827; }
     .container {
-        max-width:750px;
-        margin:40px auto;
-        padding:25px;
-        background:white;
-        border-radius:12px;
-        box-shadow:0 3px 10px rgba(0,0,0,0.1);
+        max-width:750px; margin:40px auto; padding:25px; background:white;
+        border-radius:12px; box-shadow:0 3px 10px rgba(0,0,0,0.1);
     }
-
-    h2 {
-        margin-top:0;
-        color:#1F2937;
-        font-weight:700;
-    }
-
+    h2 { margin-top:0; color:#1F2937; font-weight:700; }
     .voltar {
-        text-decoration:none;
-        color:#2563EB;
-        font-weight:600;
-        margin-bottom:15px;
-        display:inline-block;
+        text-decoration:none; color:#2563EB; font-weight:600;
+        margin-bottom:15px; display:inline-block;
     }
-
-    label {
-        display:block;
-        margin-top:15px;
-        font-weight:600;
-    }
-
+    label { display:block; margin-top:15px; font-weight:600; }
     input, select {
-        width:100%;
-        padding:10px;
-        margin-top:6px;
-        border:1px solid #D1D5DB;
-        border-radius:6px;
+        width:100%; padding:10px; margin-top:6px;
+        border:1px solid #D1D5DB; border-radius:6px;
     }
-
     button {
-        margin-top:20px;
-        width:100%;
-        padding:12px;
-        border:none;
-        background:#2563EB;
-        color:white;
-        font-weight:bold;
-        font-size:16px;
-        border-radius:8px;
-        cursor:pointer;
+        margin-top:20px; width:100%; padding:12px;
+        border:none; background:#2563EB; color:white;
+        font-weight:bold; font-size:16px; border-radius:8px; cursor:pointer;
     }
-
-    button:hover {
-        background:#1E40AF;
-    }
-
-    .msg {
-        display:none;
-        margin-top:20px;
-        padding:12px;
-        border-radius:8px;
-        font-weight:bold;
-    }
-
+    button:hover { background:#1E40AF; }
+    .msg { display:none; margin-top:20px; padding:12px; border-radius:8px; font-weight:bold; }
     .success { background:#D1FAE5; color:#065F46; }
     .error { background:#FEE2E2; color:#991B1B; }
 </style>
@@ -122,6 +75,29 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 
+// --------- Função para formatar data estilo "18 de novembro de 2025 às 15:43:03 UTC-3" ---------
+function formatarDataCompleta() {
+    const agora = new Date();
+    return agora.toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+        timeZone: "America/Sao_Paulo"
+    }) + " UTC-3";
+}
+
+// --------- ID estilo: SAMBADF-XXXXXXX ---------
+function gerarIdIngresso() {
+    const prefixo = "SAMBADF-";
+    const random = Math.random().toString(36).substring(2, 10).toUpperCase();
+    return prefixo + random;
+}
+
+
 // -------------- Função gerar -----------------
 document.getElementById("btnGerar").addEventListener("click", async () => {
 
@@ -142,7 +118,8 @@ document.getElementById("btnGerar").addEventListener("click", async () => {
 
         for (let i = 0; i < qtd; i++) {
 
-            const ingressoId = crypto.randomUUID();
+            const ingressoId = gerarIdIngresso();
+            const dataGerada = formatarDataCompleta();
 
             // Criar QR code
             const qrCanvas = document.createElement("canvas");
@@ -185,13 +162,14 @@ document.getElementById("btnGerar").addEventListener("click", async () => {
             link.download = `${ingressoId}.png`;
             link.click();
 
-            // Salvar Firestore
+            // ----------- Salvar no Firestore NO NOVO PADRÃO -------------
             await db.collection("ingressos").add({
                 id: ingressoId,
-                template: template,
-                criadoEm: new Date(),
-                pago: false,
-                enviado: false
+                evento: "Samba de Férias",
+                geradoEm: dataGerada,
+                statusEnvio: "pendente",
+                statusPagamento: "pendente",
+                template: template
             });
 
         }
