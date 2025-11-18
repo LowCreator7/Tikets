@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Painel de Controle — Samba de Férias</title>
 
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
 <style>
 /* --- CSS mantém igual ao seu anterior --- */
 :root{
@@ -89,14 +93,14 @@ tbody tr:hover{background:#f8fbff;}
 import { db, auth } from './firebase.js';
 
 // Protege página
-auth.onAuthStateChanged(user=>{
-  if(!user) window.location.href="login.html";
+auth.onAuthStateChanged(user => {
+  if (!user) window.location.href = "login.html";
 });
 
 let ingressos = [];
 
 /* Realtime */
-db.collection("ingressos").onSnapshot(snapshot=>{
+db.collection("ingressos").onSnapshot(snapshot => {
   ingressos = [];
   snapshot.forEach(doc=>{
     const d = doc.data();
@@ -161,3 +165,4 @@ function exportar(){
 
 </body>
 </html>
+
