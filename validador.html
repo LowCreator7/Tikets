@@ -1,123 +1,102 @@
-<!-- validador.html -->
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Validador - Samba de Férias</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Validar Ingresso</title>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <!-- Biblioteca do QRCode -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
-<script>
-// 🔥 Configuração do Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyD4Mwgq2qmjZ33VVR7RUFjZViUXJ3Ijpgk",
-  authDomain: "sistemaingressos-a98f0.firebaseapp.com",
-  projectId: "sistemaingressos-a98f0",
-  storageBucket: "sistemaingressos-a98f0.firebasestorage.app",
-  messagingSenderId: "1227812590",
-  appId: "1:1227812590:web:07107c0e3069fe9dfbcdff",
-  measurementId: "G-QGDNMN0VQ5"
-};
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
 
-firebase.initializeApp(firebaseConfig);
+    #reader {
+      width: 100%;
+      max-width: 350px;
+      margin: auto;
+    }
 
-const db = firebase.firestore();
-const auth = firebase.auth();
-</script>
+    #resultado {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+    }
 
-<script src="https://unpkg.com/html5-qrcode"></script>
+    button {
+      margin-top: 25px;
+      padding: 12px 22px;
+      border: none;
+      border-radius: 10px;
+      background: #333;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+    }
+  </style>
 </head>
-
-<body playsinline webkit-playsinline 
-      style="font-family:Arial,Helvetica,sans-serif; padding:20px; text-align:center; background:#f4f7fb; color:#0d47a1;">
+<body playsinline webkit-playsinline>
 
   <h2>Validador de Ingressos</h2>
-  <p>Aponte a câmera para o QR Code</p>
 
-  <div id="camera"
-       allow="camera; autoplay; fullscreen; encrypted-media; clipboard-read; clipboard-write"
-       style="max-width:420px;margin:12px auto;">
-  </div>
+  <div id="reader"></div>
+  <div id="resultado"></div>
 
-  <div id="status" style="margin-top:12px;font-weight:bold;"></div>
+  <button onclick="window.location.href='painel.html'">Voltar</button>
 
-  <a href="index.html" style="display:block;margin-top:12px;color:#1565c0;">⬅ Voltar</a>
+  <script>
+    function onScanSuccess(decodedText) {
+      document.getElementById("resultado").innerHTML =
+        "🎫 Ingresso encontrado:<br>" + decodedText;
 
-<script>
-function whenReady(fn){ if(window.db) return fn(); setTimeout(()=>whenReady(fn),150); }
+      // Aqui depois você pode consultar o Firebase se quiser
+    }
 
-whenReady(() => {
-  const status = document.getElementById('status');
-  const scanner = new Html5Qrcode("camera");
+    function onScanError(error) {
+      console.warn(error);
+    }
 
-  async function iniciarScanner() {
-    try {
-      await scanner.start(
-        { facingMode: { exact: "environment" } },
-        { fps: 10, qrbox: 250 },
-        onScan
-      );
-    } catch (err1) {
-      console.warn("Falhou traseira:", err1);
+    // Inicializa o scanner
+    document.addEventListener("DOMContentLoaded", () => {
+      const html5QrCode = new Html5Qrcode("reader");
 
-      try {
-        const devices = await Html5Qrcode.getCameras();
-        await scanner.start(
-          devices[0].id,
-          { fps: 10, qrbox: 250 },
-          onScan
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
+      };
+
+      // Tenta câmera traseira — se falhar, tenta qualquer câmera
+      Html5Qrcode.getCameras().then(devices => {
+        if (devices.length === 0) {
+          alert("Nenhuma câmera encontrada.");
+          return;
+        }
+
+        let cameraId = devices[0].id;
+
+        // Procura câmera traseira
+        devices.forEach(d => {
+          if (d.label.toLowerCase().includes("back")) cameraId = d.id;
+        });
+
+        html5QrCode.start(
+          cameraId,
+          config,
+          onScanSuccess,
+          onScanError
         );
-      } catch (err2) {
-        console.error("Erro geral:", err2);
-        status.textContent = "⚠️ O iPhone bloqueou a câmera. Verifique permissões.";
-        status.style.color = "red";
-      }
-    }
-  }
-
-  function onScan(decodedText){
-    validar(decodedText.trim());
-  }
-
-  async function validar(id){
-    try {
-      const ref = db.collection("ingressos").doc(id);
-      const doc = await ref.get();
-
-      if(!doc.exists){
-        status.textContent = "❌ Ingresso inválido";
-        status.style.color = "red";
-        return;
-      }
-
-      const data = doc.data();
-
-      if(data.status === "usado"){
-        status.textContent = "⚠️ Já utilizado";
-        status.style.color = "orange";
-        return;
-      }
-
-      await ref.update({
-        status: "usado",
-        usadoEm: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(err => {
+        console.error(err);
+        alert("Erro ao acessar a câmera.");
       });
-
-      status.textContent = "✔️ Validado com sucesso";
-      status.style.color = "green";
-    } catch(e){
-      status.textContent = "Erro: " + e.message;
-      status.style.color = "red";
-    }
-  }
-
-  iniciarScanner();
-});
-</script>
-
+    });
+  </script>
 </body>
 </html>
