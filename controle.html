@@ -31,7 +31,7 @@ const auth = firebase.auth();
 
 // Proteção
 auth.onAuthStateChanged(user => {
-    if (!user) window.location.href = "login.html";
+  if (!user) window.location.href = "login.html";
 });
 </script>
 
@@ -160,3 +160,4 @@ function render(){
 
 </body>
 </html>
+
