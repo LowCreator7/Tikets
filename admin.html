@@ -1,186 +1,213 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel Administrador - Sistema de Ingressos</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Painel Administrativo - Samba de Férias</title>
 
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  <script src="firebase.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
-  <style>
+<script>
+// Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyD4Mwgq2qmjZ33VVR7RUFjZViUXJ3Ijpgk",
+  authDomain: "sistemaingressos-a98f0.firebaseapp.com",
+  projectId: "sistemaingressos-a98f0",
+  storageBucket: "sistemaingressos-a98f0.firebasestorage.app",
+  messagingSenderId: "1227812590",
+  appId: "1:1227812590:web:07107c0e3069fe9dfbcdff",
+  measurementId: "G-QGDNMN0VQ5"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+</script>
+
+<style>
     body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f3f4f6;
+        font-family: "Poppins", Arial, sans-serif;
+        margin: 0;
+        background: #f4f7fb;
     }
 
     header {
-      background: #111827;
-      padding: 15px;
-      color: white;
-      text-align: center;
-      font-size: 22px;
-      font-weight: bold;
+        background: linear-gradient(135deg, #0d47a1, #1565c0);
+        color: white;
+        padding: 18px;
+        text-align: center;
+        font-size: 22px;
+        font-weight: bold;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.25);
     }
 
-    #container {
-      max-width: 900px;
-      margin: 30px auto;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    .container {
+        max-width: 1100px;
+        margin: 30px auto;
+        background: #fff;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 5px 18px rgba(0,0,0,0.15);
     }
 
     h2 {
-      margin: 0 0 15px 0;
-      font-size: 20px;
+        text-align: center;
+        color: #0d47a1;
+        margin: 0 0 15px;
+    }
+
+    #searchBox {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        border: 1px solid #bbb;
+        font-size: 15px;
     }
 
     table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-
-    th, td {
-      padding: 12px;
-      border-bottom: 1px solid #e5e7eb;
-      text-align: left;
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
     }
 
     th {
-      background: #111827;
-      color: white;
+        background: #1565c0;
+        color: white;
+        padding: 12px;
+        font-weight: 600;
     }
 
-    .badge {
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: bold;
-      color: white;
+    td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        font-size: 14px;
     }
 
-    .pago { background: #10b981; }
-    .pendente { background: #ef4444; }
-
-    .enviado { background: #2563eb; }
-    .nao-enviado { background: #6b7280; }
-
-    button {
-      padding: 8px 12px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      font-size: 13px;
-      border-radius: 6px;
-      cursor: pointer;
+    tr:hover {
+        background: #f1f6ff;
     }
 
-    button:hover {
-      background: #1e40af;
+    .btnLogout {
+        background: #c62828;
+        padding: 10px 18px;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        float: right;
+        margin-top: -48px;
+        font-size: 14px;
+        font-weight: 600;
     }
-  </style>
+
+    .btnLogout:hover {
+        background: #b71c1c;
+    }
+
+</style>
 </head>
 
 <body>
-  <header>Painel Administrador</header>
 
-  <div id="container">
-    <h2>Todos os ingressos</h2>
+<header>
+    Painel Administrativo
+    <button class="btnLogout" onclick="logout()">Sair</button>
+</header>
+
+<div class="container">
+    <h2>Ingressos Gerados</h2>
+
+    <input type="text" id="searchBox" placeholder="Pesquisar por ID do ingresso..." />
 
     <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Evento</th>
-          <th>Vendedor</th>
-          <th>Pagamento</th>
-          <th>Envio</th>
-          <th>Ações</th>
-          <th>Data</th>
-        </tr>
-      </thead>
-      <tbody id="lista"></tbody>
+        <thead>
+            <tr>
+                <th>ID Ingresso</th>
+                <th>Nome</th>
+                <th>Evento</th>
+                <th>Status Envio</th>
+                <th>Status Pagamento</th>
+                <th>Gerado em</th>
+                <th>Vendedor</th>
+            </tr>
+        </thead>
+        <tbody id="tabelaIngressos">
+            <tr><td colspan="7" style="text-align:center;">Carregando...</td></tr>
+        </tbody>
     </table>
+</div>
 
-  </div>
-
-  <script>
-    firebase.auth().onAuthStateChanged(async user => {
-      if (!user) {
-        alert("Você precisa estar logado como administrador.");
-        window.location.href = "index.html";
+<script>
+// Verifica se o usuário é admin
+auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+        window.location.href = "login.html";
         return;
-      }
+    }
 
-      carregarIngressos();
-    });
+    const email = user.email;
 
-    // ---- CARREGAR TODOS OS INGRESSOS ---- //
-    function carregarIngressos() {
-      firebase.firestore()
-        .collection("ingressos")
-        .orderBy("geradoEm", "desc")
-        .onSnapshot(snapshot => {
+    if (!email.endsWith("@admin.com")) {
+        alert("Acesso negado! Apenas administradores podem acessar.");
+        window.location.href = "controle.html";
+        return;
+    }
 
-          const lista = document.getElementById("lista");
-          lista.innerHTML = "";
+    carregarIngressos();
+});
 
-          snapshot.forEach(doc => {
+// Carregar ingressos em tempo real
+function carregarIngressos() {
+    const tabela = document.getElementById("tabelaIngressos");
+
+    db.collection("ingressos").orderBy("geradoEm", "desc").onSnapshot(snapshot => {
+        tabela.innerHTML = "";
+
+        if (snapshot.empty) {
+            tabela.innerHTML = "<tr><td colspan='7' style='text-align:center;'>Nenhum ingresso encontrado</td></tr>";
+            return;
+        }
+
+        snapshot.forEach(doc => {
             const ing = doc.data();
 
-            const pagamento = ing.statusPagamento === "pago" ? 
-              `<span class="badge pago">PAGO</span>` :
-              `<span class="badge pendente">PENDENTE</span>`;
-
-            const envio = ing.statusEnvio === "enviado" ? 
-              `<span class="badge enviado">ENVIADO</span>` :
-              `<span class="badge nao-enviado">PENDENTE</span>`;
-
-            const data = ing.geradoEm?.toDate().toLocaleString("pt-BR");
-
-            lista.innerHTML += `
-              <tr>
-                <td>${ing.id}</td>
-                <td>${ing.evento}</td>
-                <td>${ing.vendedorEmail || "—"}</td>
-                <td>${pagamento}</td>
-                <td>${envio}</td>
-
-                <td>
-                  <button onclick="marcarPago('${doc.id}')">Pago</button>
-                  <button onclick="marcarEnviado('${doc.id}')">Enviado</button>
-                </td>
-
-                <td>${data}</td>
-              </tr>
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${ing.id ?? ""}</td>
+                <td>${ing.nome ?? ""}</td>
+                <td>${ing.evento ?? ""}</td>
+                <td>${ing.statusEnvio ?? ""}</td>
+                <td>${ing.statusPagamento ?? ""}</td>
+                <td>${ing.geradoEm?.toDate().toLocaleString("pt-BR")}</td>
+                <td>${ing.vendedor ?? ""}</td>
             `;
-          });
+
+            tabela.appendChild(tr);
         });
-    }
+    });
+}
 
-    // ---- ATUALIZAR STATUS ---- //
+// 🔎 Filtro de pesquisa por ID
+document.getElementById("searchBox").addEventListener("input", function () {
+    const termo = this.value.toLowerCase();
+    const linhas = document.querySelectorAll("#tabelaIngressos tr");
 
-    function marcarPago(id) {
-      firebase.firestore().collection("ingressos").doc(id)
-        .update({ statusPagamento: "pago" })
-        .then(() => console.log("Pagamento marcado"))
-        .catch(err => alert(err.message));
-    }
+    linhas.forEach(linha => {
+        const id = linha.children[0]?.textContent.toLowerCase() || "";
+        linha.style.display = id.includes(termo) ? "" : "none";
+    });
+});
 
-    function marcarEnviado(id) {
-      firebase.firestore().collection("ingressos").doc(id)
-        .update({ statusEnvio: "enviado" })
-        .then(() => console.log("Envio marcado"))
-        .catch(err => alert(err.message));
-    }
-
-  </script>
+// Sair
+function logout() {
+    auth.signOut();
+    window.location.href = "login.html";
+}
+</script>
 
 </body>
 </html>
