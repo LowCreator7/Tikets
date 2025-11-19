@@ -137,7 +137,7 @@ body {
 <div class="header">
     Painel de Ingressos
     <a href="index.html">⬅ Voltar</a>
-    <a href="login.html">Sair</a>
+    <a href="#" onclick="logout()">Sair</a>
 </div>
 
 <div class="container">
@@ -188,6 +188,10 @@ auth.onAuthStateChanged(user => {
       });
 });
 
+    function logout() {
+    auth.signOut();
+    location.href = "login.html";
+}
 // ================= FILTROS ==================
 function setFiltro(f){
     filtroAtual = f;
@@ -258,5 +262,6 @@ function render(){
 
 </body>
 </html>
+
 
 
