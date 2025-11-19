@@ -1,207 +1,157 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Sistema de Ingressos – Login</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Login - Samba de Férias</title>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
+<script>
+// 🔥 Config Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyD4Mwgq2qmjZ33VVR7RUFjZViUXJ3Ijpgk",
+  authDomain: "sistemaingressos-a98f0.firebaseapp.com",
+  projectId: "sistemaingressos-a98f0",
+  storageBucket: "sistemaingressos-a98f0.firebasestorage.app",
+  messagingSenderId: "1227812590",
+  appId: "1:1227812590:web:07107c0e3069fe9dfbcdff",
+  measurementId: "G-QGDNMN0VQ5"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+</script>
+
 <style>
-/* ==== RESET ==== */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Poppins', Arial, sans-serif;
+        background: linear-gradient(135deg, #0d47a1, #1565c0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        color: #fff;
+    }
 
-/* ==== BACKGROUND ANIMADO ==== */
-body {
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: "Inter", sans-serif;
-    background: linear-gradient(-45deg, #1e3c72, #2a5298, #283593, #1565c0);
-    background-size: 400% 400%;
-    animation: gradient 12s ease infinite;
-}
+    .card {
+        width: 360px;
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 14px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+        text-align: center;
+        animation: fadeIn 0.6s ease;
+    }
 
-@keyframes gradient {
-    0% { background-position: 0 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0 50%; }
-}
+    h2 {
+        margin-bottom: 10px;
+        color: #0d47a1;
+        font-weight: 700;
+    }
 
-/* ==== LOGIN CARD (GLASS EFFECT) ==== */
-.login-card {
-    width: 340px;
-    background: rgba(255, 255, 255, 0.08);
-    padding: 40px 32px;
-    border-radius: 18px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 10px 35px rgba(0,0,0,0.4);
-    text-align: center;
-    animation: fadeIn 0.7s ease-out;
-}
+    p.subtitle {
+        font-size: 13px;
+        color: #555;
+        margin-top: -4px;
+    }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+    input {
+        width: 100%;
+        padding: 12px;
+        margin: 10px 0;
+        border-radius: 8px;
+        border: 1px solid #aaa;
+        font-size: 15px;
+    }
 
-/* ==== LOGO / TÍTULO ==== */
-.login-card h2 {
-    color: #fff;
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 20px;
-}
+    button {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        background: #1565c0;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.3s;
+        margin-top: 5px;
+    }
 
-/* ==== INPUTS ==== */
-input {
-    width: 100%;
-    padding: 14px;
-    border-radius: 10px;
-    border: none;
-    outline: none;
-    margin-bottom: 14px;
-    font-size: 16px;
-}
+    button:hover {
+        background: #0d47a1;
+        transform: scale(1.03);
+    }
 
-input:focus {
-    outline: 2px solid #64b5f6;
-    background: #eef6ff;
-}
+    a {
+        color: #1565c0;
+        text-decoration: none;
+        font-size: 14px;
+        display: block;
+        margin-top: 12px;
+    }
 
-/* ==== BOTÃO ==== */
-button {
-    width: 100%;
-    padding: 14px;
-    margin-top: 4px;
-    font-size: 16px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 600;
-    background: linear-gradient(135deg, #42a5f5, #1e88e5);
-    color: white;
-    transition: 0.25s;
-}
-
-button:hover {
-    transform: scale(1.03);
-    background: linear-gradient(135deg, #64b5f6, #2196f3);
-}
-
-/* ==== ERRO ==== */
-.error-box {
-    margin-top: 14px;
-    padding: 12px;
-    background: #e53935;
-    border-radius: 10px;
-    display: none;
-    color: white;
-    font-size: 14px;
-    animation: slideDown 0.3s ease;
-}
-
-@keyframes slideDown {
-    from { opacity: 0; transform: translateY(-6px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* LOADING BUTTON */
-.loading {
-    opacity: 0.7;
-    pointer-events: none;
-}
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px);}
+        to { opacity: 1; transform: translateY(0);}
+    }
 </style>
+
 </head>
 
 <body>
 
-<div class="login-card">
+<div class="card">
     <h2>Bem-vindo</h2>
+    <p class="subtitle">Acesse sua área de vendas ou administração</p>
 
-    <input id="email" type="email" placeholder="E-mail" />
-    <input id="senha" type="password" placeholder="Senha" />
+    <input id="email" placeholder="Email" />
+    <input id="password" placeholder="Senha" type="password"/>
 
-    <button id="btnLogin" onclick="login()">Entrar</button>
+    <button id="btnLogin">Entrar</button>
 
-    <div id="erro" class="error-box"></div>
+    <a href="index.html">Voltar ao início</a>
 </div>
 
 <script>
-// ========== FIREBASE ==========
-const firebaseConfig = {
-    apiKey: "AIzaSyD4Mwgq2qmjZ33VVR7RUFjZViUXJ3Ijpgk",
-    authDomain: "sistemaingressos-a98f0.firebaseapp.com",
-    projectId: "sistemaingressos-a98f0",
-    storageBucket: "sistemaingressos-a98f0.firebasestorage.app",
-    messagingSenderId: "1227812590",
-    appId: "1:1227812590:web:07107c0e3069fe9dfbcdff"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
+// Redirecionamento automático se já estiver logado
+auth.onAuthStateChanged(user => {
+  if (user) {
+    const email = user.email;
 
-// ========== LOGIN ==========
-function login() {
-    const email = document.getElementById("email").value.trim();
-    const senha = document.getElementById("senha").value;
-    const erro = document.getElementById("erro");
-    const btn = document.getElementById("btnLogin");
+    if (email.endsWith("@admin.com")) {
+        window.location.href = "admin.html";
+    } else {
+        window.location.href = "controle.html";
+    }
+  }
+});
 
-    erro.style.display = "none";
+// Botão de login
+document.getElementById("btnLogin").addEventListener("click", async () => {
+  const email = document.getElementById("email").value.trim();
+  const pass = document.getElementById("password").value.trim();
 
-    if (!email || !senha) {
-        showError("Preencha todos os campos.");
-        return;
+  try {
+    const userCred = await auth.signInWithEmailAndPassword(email, pass);
+
+    // 🔍 Define destino conforme o tipo do usuário
+    if (email.endsWith("@admin.com")) {
+        window.location.href = "admin.html";
+    } else {
+        window.location.href = "controle.html";
     }
 
-    btn.classList.add("loading");
-    btn.innerText = "Carregando...";
-
-    auth.signInWithEmailAndPassword(email, senha)
-        .then((cred) => {
-            const mail = cred.user.email;
-
-            if (mail.endsWith("@admin.com")) {
-                window.location.href = "admin.html";
-            } else if (mail.endsWith("@staff.com")) {
-                window.location.href = "painel.html";
-            } else {
-                showError("Este e-mail não tem permissão.");
-                auth.signOut();
-            }
-        })
-        .catch((err) => {
-            showError(traduzErro(err.code));
-        })
-        .finally(() => {
-            btn.classList.remove("loading");
-            btn.innerText = "Entrar";
-        });
-}
-
-// ========== MENSAGENS ==========
-function showError(msg) {
-    const erro = document.getElementById("erro");
-    erro.innerHTML = msg;
-    erro.style.display = "block";
-}
-
-function traduzErro(code) {
-    switch(code) {
-        case "auth/user-not-found": return "Usuário não encontrado.";
-        case "auth/wrong-password": return "Senha incorreta.";
-        case "auth/invalid-email": return "E-mail inválido.";
-        case "auth/too-many-requests": return "Muitas tentativas. Tente mais tarde.";
-        default: return "Erro ao fazer login.";
-    }
-}
+  } catch (err) {
+    alert("Erro ao fazer login: " + err.message);
+  }
+});
 </script>
 
 </body>
