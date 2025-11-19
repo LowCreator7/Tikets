@@ -177,7 +177,13 @@ let ingressos = [];
 auth.onAuthStateChanged(user => {
     if (!user) return window.location.href = "login.html";
 
-    // 🔥 AGORA SOMENTE OS INGRESSOS DO VENDEDOR LOGADO
+    // 🔒 Impede ADMIN de acessar painel de vendedor
+    if (user.email.endsWith("@admin.com")) {
+        alert("Administradores usam outro painel.");
+        return window.location.href = "admin.html";
+    }
+
+    // 🔥 SOMENTE INGRESSOS DO VENDEDOR
     db.collection("ingressos")
       .where("vendedorUid", "==", user.uid)
       .orderBy("geradoEm", "desc")
@@ -188,12 +194,8 @@ auth.onAuthStateChanged(user => {
       });
 });
 
-    function logout() {
-    auth.signOut();
-    location.href = "login.html";
-}
 // ================= FILTROS ==================
-function setFiltro(f){
+function setFiltro(f) {
     filtroAtual = f;
     render();
 }
@@ -211,6 +213,12 @@ function marcarEnviado(id){
     });
 }
 
+// ================= LOGOUT ==================
+function logout() {
+    auth.signOut();
+    location.href = "login.html";
+}
+
 // ================= RENDER ==================
 function render(){
     const lista = document.getElementById("lista");
@@ -218,27 +226,43 @@ function render(){
 
     let filtrados = ingressos;
 
-    if (filtroAtual !== "todos"){
-        filtrados = ingressos.filter(i => 
-            i.statusPagamento === filtroAtual || 
-            i.statusEnvio === filtroAtual
-        );
+    // Filtros corrigidos
+    if (filtroAtual === "pendente") {
+        filtrados = ingressos.filter(i => i.statusPagamento === "pendente");
+    }
+    else if (filtroAtual === "pago") {
+        filtrados = ingressos.filter(i => i.statusPagamento === "pago");
+    }
+    else if (filtroAtual === "enviado") {
+        filtrados = ingressos.filter(i => i.statusEnvio === "enviado");
     }
 
     filtrados.forEach(item => {
+
+        // Corrige IDs seguros para DOM
+        const safeId = item.id.replace(/[^a-zA-Z0-9_-]/g, "");
+
         const card = document.createElement("div");
         card.className = "card";
 
         card.innerHTML = `
-            <div style="font-size:18px;font-weight:bold;color:#1e3c72">🎟 ${item.id}</div>
+            <div style="font-size:18px;font-weight:bold;color:#1e3c72">
+                🎟 ${item.id}
+            </div>
+
+            <div><b>Cliente:</b> ${item.nome}</div>
             <div><b>Evento:</b> ${item.evento}</div>
 
             <div style="margin-top:10px;">
-                <span class="badge bg-${item.statusPagamento}">Pagamento: ${item.statusPagamento}</span>
-                <span class="badge bg-${item.statusEnvio}">Envio: ${item.statusEnvio}</span>
+                <span class="badge bg-${item.statusPagamento}">
+                    Pagamento: ${item.statusPagamento}
+                </span>
+                <span class="badge bg-${item.statusEnvio}">
+                    Envio: ${item.statusEnvio}
+                </span>
             </div>
 
-            <div class="qr-box" id="qr-${item.id}"></div>
+            <div class="qr-box" id="qr-${safeId}"></div>
 
             <button class="action-btn action-pago" onclick="marcarPago('${item.id}')">
                 ✔ Marcar como Pago
@@ -251,7 +275,11 @@ function render(){
 
         lista.appendChild(card);
 
-        new QRCode(document.getElementById("qr-"+item.id), {
+        // QR Code corrigido (sem duplicar)
+        const box = document.getElementById("qr-" + safeId);
+        box.innerHTML = "";
+
+        new QRCode(box, {
             text: item.id,
             width: 100,
             height: 100
@@ -262,6 +290,3 @@ function render(){
 
 </body>
 </html>
-
-
-
