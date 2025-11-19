@@ -128,7 +128,7 @@ auth.onAuthStateChanged(user => {
     if (email.endsWith("@admin.com")) {
         window.location.href = "admin.html";
     } else {
-        window.location.href = "controle.html";
+        window.location.href = "login.html";
     }
   }
 });
@@ -145,7 +145,7 @@ document.getElementById("btnLogin").addEventListener("click", async () => {
     if (email.endsWith("@admin.com")) {
         window.location.href = "admin.html";
     } else {
-        window.location.href = "controle.html";
+        window.location.href = "login.html";
     }
 
   } catch (err) {
@@ -156,3 +156,4 @@ document.getElementById("btnLogin").addEventListener("click", async () => {
 
 </body>
 </html>
+
